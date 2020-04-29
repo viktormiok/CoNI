@@ -2,19 +2,23 @@
 ############
 
 
+
 ####################################
 #Functions
 ####################################
-CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=TRUE, correlateDFs=TRUE,splitData1=TRUE,old_split=NULL,split_number=2,outputDir="./CoNIOutput/",iteration_start=1,wait_iteration=0, numCores=6) { #It could be something else
+CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=TRUE, correlateDFs=TRUE,splitData1=TRUE,old_split=NULL,split_number=2,outputDir="./CoNIOutput/",delPrevious=TRUE,iteration_start=1,wait_iteration=0, numCores=6,verbose=TRUE) {
 
   #Check if input objects are defined
-  do_objectsExist(data1,data2)
+  do_objectsExist(data1,data2,verbose)
 
   #Start measuring time
   start_time <- Sys.time()
 
   #Check if output directory exists
-  check_outputDir(outputDir)
+  check_outputDir(outputDir,verbose)
+
+  #Check if previous files are present and delete accordingly
+  check_previous(delPrevious,iteration=iteration_start,outDir=outputDir,verb=verbose)
 
   #Test if sample names are the same in both data sets
   compare_sampleNames(data1,data2)
@@ -23,17 +27,17 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
   colnames(data1)<-make.names(colnames(data1),unique=TRUE)
   colnames(data2)<-make.names(colnames(data2),unique=TRUE)
 
-  if(!file.exists(paste(data2name,"_Tablesignificant.csv",sep=""))){
+  if(!file.exists(paste(outputDir,"KeptFeatures_",data2name,".csv",sep=""))){
     #Get significant correlations between metabolites
     print("Calculating correlations of data2")
     normMetabo_Tablesignificant<-sig_correlation2(data2,padjustData2)
     #Get indexes for the rows and columns for the metabo data
     normMetabo_Tablesignificant$RowIndex<-apply(normMetabo_Tablesignificant,1,function(x){return(which(colnames(data2)[1:ncol(data2)]==x[1]))})
     normMetabo_Tablesignificant$ColIndex<-apply(normMetabo_Tablesignificant,1,function(x){return(which(colnames(data2)[1:ncol(data2)]==x[2]))})
-    data.table::fwrite(normMetabo_Tablesignificant,paste(data2name,"_Tablesignificant.csv",sep=""))
-    normMetabo_Tablesignificant<-data.table::fread(paste("./",data2name,"_Tablesignificant.csv",sep=""))
+    data.table::fwrite(normMetabo_Tablesignificant,paste(outputDir,"KeptFeatures_",data2name,".csv",sep=""))
+    normMetabo_Tablesignificant<-data.table::fread(paste(outputDir,"KeptFeatures_",data2name,".csv",sep=""))
   }else{
-    normMetabo_Tablesignificant<-data.table::fread(paste("./",data2name,"_Tablesignificant.csv",sep=""))
+    normMetabo_Tablesignificant<-data.table::fread(paste(outputDir,"KeptFeatures_",data2name,".csv",sep=""))
   }
 
   #Get low variance genes
@@ -43,8 +47,8 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
   #data1<-as.data.frame(data1)
 
   #Get only those genes that correlate with the metabolites
-  if(correlateDFs & !file.exists(paste("./",data1name,"_",data2name,".csv",sep=""))){
-    print("Calculating correlations between data2 and data1")
+  if(correlateDFs & !file.exists(paste(outputDir,"KeptFeatures_",data1name,".csv",sep=""))){
+    if(verbose){print("Calculating correlations between data2 and data1")}
 
     #Get Column indices of all metabolites
     metabo_indices<-unique(c(normMetabo_Tablesignificant$RowIndex,normMetabo_Tablesignificant$ColIndex))
@@ -53,19 +57,12 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
 
     ResultsCorDfs <- sig_correlation2Dfs(SubSetdata2,data1)
     genesSig <- unique(ResultsCorDfs$gene)
-
-    #####################
-    #Correct split number
-    #missing
-    #Add function missing
-    ####################
-
-    print(paste(length(genesSig),"features were kept from 'big' df",sep=" "))
+    if(verbose){print(paste(length(genesSig),"features were kept from 'big' df",sep=" "))}
     data1 <- data1[,genesSig]
-    data.table::fwrite(data1,paste("./",data1name,"_",data2name,".csv",sep=""))
-    data1<-data.table::fread(paste("./",data1name,"_",data2name,".csv",sep=""))
-  }else if(file.exists("./data1.csv")){
-    data1<-data.table::fread(paste("./",data1name,"_",data2name,".csv",sep=""))
+    data.table::fwrite(data1,paste(outputDir,"KeptFeatures_",data1name,".csv",sep=""))
+    data1<-data.table::fread(paste(outputDir,"KeptFeatures_",data1name,".csv",sep=""))
+  }else if(file.exists(paste(outputDir,"KeptFeatures_",data1name,".csv",sep=""))){
+    data1<-data.table::fread(paste(outputDir,"KeptFeatures_",data1name,".csv",sep=""))
   }
 
   if(ncol(data1)*nrow(normMetabo_Tablesignificant)>500){
@@ -76,7 +73,7 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
   if(splitData1){
 
     ls_dfs<-split_df(data1,old_split,split_number)
-    print(paste("Data1 will be split into",length(ls_dfs),"parts",sep=" "))
+    print(paste("Data1 was split into",length(ls_dfs),"parts",sep=" "))
 
     for (i in iteration_start:length(ls_dfs)){
       df_iter<-ls_dfs[[i]]
@@ -98,9 +95,9 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
       #library(doSNOW)
       if(is.null(numCores)){
         numCores<-detectCores()-2
-        cat("Running parallelization with ",numCores," cores\n",sep="")
+        if(verbose){cat("Running parallelization with ",numCores," cores\n",sep="")}
       }else{
-        cat("Running parallelization with ",numCores," cores\n",sep="")
+        if(verbose){cat("Running parallelization with ",numCores," cores\n",sep="")}
       }
 
       print(paste('Running CoNI Split Number',i,sep=" "))
@@ -109,15 +106,15 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
       registerDoSNOW(cl)
       #registerDoParallel(numCores)
 
-      df_results = foreach(j = 1:ncol(df_iter), .export =c("df_iter","normMetabo_Tablesignificant","data2","isNA_NAN"),.packages = c("ppcor", "doParallel","cocor") , .combine=rbind,.inorder = FALSE) %dopar% { #Loop table significant metabolites %dopar%
-        results2 =foreach(i = 1:nrow(normMetabo_Tablesignificant),.export =c("df_iter","normMetabo_Tablesignificant","data2","isNA_NAN"),.packages = c("ppcor", "doParallel","cocor") , .combine=rbind,.verbose = FALSE,.inorder = FALSE) %dopar% { #Loop genes
+      df_results = foreach(j = 1:ncol(df_iter), .packages = c("ppcor", "doParallel","cocor") , .combine=rbind,.inorder = FALSE) %dopar% { #Loop table significant metabolites %dopar%
+        results2 =foreach(i = 1:nrow(normMetabo_Tablesignificant),.packages = c("ppcor", "doParallel","cocor") , .combine=rbind,.verbose = FALSE,.inorder = FALSE) %dopar% { #Loop genes
           index1<-normMetabo_Tablesignificant[i,6]#Index column of first metabolite
           index2<-normMetabo_Tablesignificant[i,7]#Index column of second metabolite
 
           #Get metabolites names and gene name
-          metabolite_name1<-normMetabo_Tablesignificant[i,1]
-          metabolite_name2<-normMetabo_Tablesignificant[i,2]
-          gene_name<-colnames(df_iter)[j]
+          Feature_1_data2<-normMetabo_Tablesignificant[i,1]
+          Feature_2_data2<-normMetabo_Tablesignificant[i,2]
+          Feature_data1<-colnames(df_iter)[j]
 
           #Get correlation between metabolites
           cor_coefficient<-normMetabo_Tablesignificant[i,3]
@@ -149,7 +146,7 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
           cdgo_pvalue <- cdgo@steiger1980$p.value
           cdgo2_pvalue<- cdgo2@steiger1980$p.value
 
-          rowtoprint<-list(metabolite_name1,metabolite_name2,gene_name, #change to list instead of cbind.data.frame
+          rowtoprint<-list(Feature_1_data2,Feature_2_data2,Feature_data1, #change to list instead of cbind.data.frame
                            pcor_coefficient,pcor_pvalue,cor_coefficient,
                            cor_pvalue,cdgo_pvalue,cdgo2_pvalue)
         }
@@ -159,7 +156,7 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
       #Get rid of rows with only NAs --> Not working...
       #df_results<-df_results[rowSums(is.na(df_results)) != ncol(df_results), ]
       df_results<-as.data.frame(df_results)
-      colnames(df_results)<-c("metabolite_name1",	"metabolite_name2",	"gene_name",	"pcor_coefficient",	"pcor_pvalue",	"cor_coefficient",	"cor_pvalue",	"cdgo_pvalue",	"cdgo2_pvalue")
+      colnames(df_results)<-c("Feature_1_data2",	"Feature_2_data2",	"Feature_data1",	"pcor_coefficient",	"pcor_pvalue",	"cor_coefficient",	"cor_pvalue",	"cdgo_pvalue",	"cdgo2_pvalue")
       df_results<-as.matrix(df_results)
 
       oldw <- getOption("warn")
@@ -195,6 +192,7 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
     end_time <- Sys.time()
     total_time<-difftime(end_time,start_time,units='hours')
     cat(total_time,"hours", "\n",sep=" ")
+    colnames(CoNIOutput)<-c(paste0("Feature_1_",data2name),	paste0("Feature_2_",data2name),	paste0("Feature_",data1name),	"pcor_coefficient",	"pcor_pvalue",	"cor_coefficient",	"cor_pvalue",	"cdgo_pvalue",	"cdgo2_pvalue")
     return(CoNIOutput)
   }else{
     print('Split is not necessary. Running standard CoNI...')
@@ -212,9 +210,9 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
         index2<-normMetabo_Tablesignificant[i,7]#Index column of second metabolite
 
         #Get metabolites names and gene name
-        metabolite_name1<-normMetabo_Tablesignificant[i,1]
-        metabolite_name2<-normMetabo_Tablesignificant[i,2]
-        gene_name<-colnames(data1)[j]
+        Feature_1_data2<-normMetabo_Tablesignificant[i,1]
+        Feature_2_data2<-normMetabo_Tablesignificant[i,2]
+        Feature_data1<-colnames(data1)[j]
 
         #Get correlation between metabolites
         cor_coefficient<-normMetabo_Tablesignificant[i,3]
@@ -242,7 +240,7 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
                                           alternative="two.sided", alpha=0.05, conf.level=0.95, null.value=0, test='steiger1980')
         cdgo_pvalue <- cdgo@steiger1980$p.value
         cdgo2_pvalue<- cdgo2@steiger1980$p.value
-        rowtoprint<-cbind.data.frame(metabolite_name1,metabolite_name2,gene_name,
+        rowtoprint<-cbind.data.frame(Feature_1_data2,Feature_2_data2,Feature_data1,
                                      pcor_coefficient,pcor_pvalue,cor_coefficient,
                                      cor_pvalue,cdgo_pvalue,cdgo2_pvalue)
 
@@ -252,6 +250,7 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
     print('CoNI ran successfully')
     end_time <- Sys.time()
     print(end_time - start_time)
+    colnames(df_results)<-c(paste0("Feature_1_",data2name),	paste0("Feature_2_",data2name),	paste0("Feature_",data1name),	"pcor_coefficient",	"pcor_pvalue",	"cor_coefficient",	"cor_pvalue",	"cdgo_pvalue",	"cdgo2_pvalue")
     return(df_results)
   }
 
@@ -262,7 +261,7 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
 writeTable <- function(results_write,num_cores,outputDir,iteration) {
   out <- tryCatch(
     {
-      data.table::fwrite(results_write, paste(outputDir,"CoNIOutputSplit",iteration,".csv",sep=""),nThread=num_cores)
+      suppressMessages(data.table::fwrite(results_write, paste(outputDir,"CoNIOutputSplit",iteration,".csv",sep=""),nThread=num_cores))
     },
     error=function(cond) {
       message('fwrite failed')
@@ -275,7 +274,29 @@ writeTable <- function(results_write,num_cores,outputDir,iteration) {
   return(out)
 }
 
-
+#This function checks previous files and deletes according to the User input option
+check_previous<-function(del,iteration,outDir,verb=verbose){
+  if(del){
+    filesDel<-list.files(outDir,pattern = "CoNIOutputSplit")
+    if(length(filesDel)>0){
+      sapply(filesDel, function(f){file.remove(paste0(outDir,f))})
+    }
+    filesDel2<-list.files(outDir,pattern = "KeptFeatures_")
+    if(length(filesDel2)>0){
+      sapply(filesDel2, function(f){file.remove(paste0(outDir,f))})
+    }
+  }else if(iteration>1){
+    if(verb){
+      cat("Previous files are present\n")
+      cat("Starting from iteration ",iteration,"\n",sep="")
+    }
+  }else{
+    filesDel<-list.files(outDir,pattern = "CoNIOutputSplit")
+    if(length(filesDel)>0){
+      sapply(filesDel, function(f){file.remove(paste0(outDir,f))})
+    }
+  }
+}
 
 #This function tests if the result of a calculation is NA or NAN
 isNA_NAN<-function(result){
@@ -289,12 +310,14 @@ isNA_NAN<-function(result){
 
 #This function tests if the input files exist, if they do not it will output an error and
 #end CoNI
-do_objectsExist<-function(gene_exp,norm_metabo_dat){
+do_objectsExist<-function(gene_exp,norm_metabo_dat,verb=verbose){
   if(missing(gene_exp) | missing(norm_metabo_dat)){
     message("Input objects are missing")
     stop("CoNI end")
   }else{
-    print("Input objects are defined")
+    if(verb){
+      print("Input objects are defined")
+    }
   }
 }
 
@@ -511,9 +534,9 @@ merge_outpuSplitFiles<-function(outputDir){
 
 
 #Check if output directory exists and if it does not it will create it
-check_outputDir<-function(outputDir){
+check_outputDir<-function(outputDir,verb=verbose){
   if (file.exists(paste(outputDir,sep=""))) {
-    print("Output directory exists")
+    if(verb){print("Output directory exists")}
   } else {
     print("Output directory does not exist - creating directory ... ")
     dir.create(file.path(paste(outputDir,sep="")))
@@ -524,7 +547,7 @@ check_outputDir<-function(outputDir){
 #Expression table contains in one column the genes and a second column that specifies if the gene is a low expressed gene = LowExpression
 #or not = ""
 expression_level<-function(CoNI_results, expressionTable){
-  expressionLevel<-expressionLevelTable[match(CoNI_results$gene_name,expressionTable$Gene),"ExpressionLevel"]
+  expressionLevel<-expressionLevelTable[match(CoNI_results$Feature_data1,expressionTable$Gene),"ExpressionLevel"]
   expressionLevel
 }
 
@@ -535,8 +558,8 @@ generate_network<-function(ResultsCoNI, colorNodesTable){
 
   #Summarize results for network construction
   df <- plyr::ddply(results_SteigerAdjust,c(1,2),plyr::summarize,
-              Genes=length(gene_name),
-              GenesString=paste0(unique(gene_name),collapse=";"))
+              Genes=length(Feature_data1),
+              GenesString=paste0(unique(Feature_data1),collapse=";"))
   colnames(df) <- c("from","to","weight","Genes")
   clinksd <- df
   clinksd$type <- "hyperlink"
@@ -566,8 +589,8 @@ generate_network_2<-function(ResultsCoNI, colorNodesTable,outputDir="./",outputF
   results_SteigerAdjust <- ResultsCoNI[,c(1:7)] #Get pair metabolites, gene and pcor and cor information... change to add more information
   #Summarize results for network construction
   df<-plyr::ddply(results_SteigerAdjust,c(1,2),plyr::summarize,
-            weightreal=length(gene_name),
-            Genes=paste0(unique(gene_name),collapse=";"),
+            weightreal=length(Feature_data1),
+            Genes=paste0(unique(Feature_data1),collapse=";"),
             #ActualGeneNames=paste0(unique(ActualGeneName),collapse=";"),
             PcorValues=paste0(pcor_coefficient,collapse=";"),
             CorValues=paste0(cor_coefficient,collapse=";"),
@@ -598,7 +621,7 @@ generate_network_2<-function(ResultsCoNI, colorNodesTable,outputDir="./",outputF
 
 #Find local regulated genes
 find_localRegulatedFeatures<-function(ResultsCoNI,network){
-  ls2 <- length(unique(ResultsCoNI$gene_name)) #get number of genes affecting metabolites
+  ls2 <- length(unique(ResultsCoNI$Feature_data1)) #get number of genes affecting metabolites
   #Distance = 2 -> Second level neighborhood?
   df <- list()
 
@@ -609,13 +632,13 @@ find_localRegulatedFeatures<-function(ResultsCoNI,network){
       l1[[j]] <- igraph::V(network)$name[neighbors(network, j)]#Loop neighbors of the node in the iteration and get their neighbors (Second level neighborhood)
     }
     l1 <- unique(unlist(l1)) #Get unique 2nd level neighbors
-    s <- subset(ResultsCoNI, ((metabolite_name1==i & metabolite_name2 %in% l) | (metabolite_name2==i & metabolite_name1 %in% l)) |
-                  ((metabolite_name1 %in% l & metabolite_name2 %in% l1) | (metabolite_name2 %in% l & metabolite_name1 %in% l1)))
-    a <- length(unique(paste0(s$metabolite_name1,"_",s$metabolite_name2)))
-    d <- length(unique(s$gene_name))
+    s <- subset(ResultsCoNI, ((Feature_1_data2==i & Feature_2_data2 %in% l) | (Feature_2_data2==i & Feature_1_data2 %in% l)) |
+                  ((Feature_1_data2 %in% l & Feature_2_data2 %in% l1) | (Feature_2_data2 %in% l & Feature_1_data2 %in% l1)))
+    a <- length(unique(paste0(s$Feature_1_data2,"_",s$Feature_2_data2)))
+    d <- length(unique(s$Feature_data1))
     e <- nrow(s)
     s <- droplevels(s)
-    b <- table(s$gene_name)
+    b <- table(s$Feature_data1)
     df[[i]] <- data.frame("Node1"=rep(i,length(b)),"Edges"=rep(a,length(b)),"Draws"=rep(e,length(b)),"GenesInTotal"=rep(d,length(b)),as.data.frame(b))
   }
   #Generate result data frame
@@ -633,22 +656,22 @@ find_localRegulatedFeatures<-function(ResultsCoNI,network){
 }
 
 tableLRGs_Metabolites<-function(CoNIResults,LRGenes){
-  CoNIResults_LRGs<-CoNIResults[CoNIResults$gene_name %in% LRGenes,]
-  Gene_TableLRGs<- plyr::ddply(CoNIResults_LRGs, .(metabolite_name1,metabolite_name2), plyr::summarize,
-                         Genes=paste(gene_name,collapse=","))
+  CoNIResults_LRGs<-CoNIResults[CoNIResults$Feature_data1 %in% LRGenes,]
+  Gene_TableLRGs<- plyr::ddply(CoNIResults_LRGs, .(Feature_1_data2,Feature_2_data2), plyr::summarize,
+                         Genes=paste(Feature_data1,collapse=","))
   #Join Metabolite pairs
-  CoNIResults_LRGs_MetaboliteJoined<-unite(CoNIResults_LRGs,MetabolitePair,metabolite_name1,metabolite_name2,sep="-")
+  CoNIResults_LRGs_MetaboliteJoined<-unite(CoNIResults_LRGs,MetabolitePair,Feature_1_data2,Feature_2_data2,sep="-")
   CoNIResults_LRGs_MetaboliteJoined<-CoNIResults_LRGs_MetaboliteJoined[,c(1,2)]
 
   #Chowate table Genes and their corresponding Metabolite pairs
-  LRGs_and_MPairs <- plyr::ddply(CoNIResults_LRGs_MetaboliteJoined, .(gene_name), plyr::summarize,
+  LRGs_and_MPairs <- plyr::ddply(CoNIResults_LRGs_MetaboliteJoined, .(Feature_data1), plyr::summarize,
                            MetabolitePairs=paste(MetabolitePair,collapse=","))
   #Temporary table
   temp<-as.data.frame(CoNIResults_LRGs[,c(1:3)])
 
   #Add to the LRGs and Metabolites pairs the unique individual metabolites
-  LRGs_and_MPairs$Metabolites<-ddply(temp, .(gene_name), plyr::summarize,
-                                     Metabolites=paste(unique(c(as.character(metabolite_name1),as.character(metabolite_name2))),collapse=","))[,2]
+  LRGs_and_MPairs$Metabolites<-ddply(temp, .(Feature_data1), plyr::summarize,
+                                     Metabolites=paste(unique(c(as.character(Feature_1_data2),as.character(Feature_2_data2))),collapse=","))[,2]
   colnames(LRGs_and_MPairs)<-c("Local Regulated Gene","Metabolite pairs","Metabolites")
   LRGs_and_MPairs
 }

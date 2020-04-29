@@ -8,7 +8,8 @@
 %%  ~~ A concise (1-5 lines) description of what the function does. ~~
 }
 \usage{
-CoNI(data1,data2,data2Name="data2",padjustdata2=TRUE,correlateDFs=TRUE,splitData1=TRUE,split_number=2)
+CoNI(data1,data2,data2Name="data2",padjustdata2=TRUE,
+      correlateDFs=TRUE,splitData1=TRUE,split_number=2,outputDir="./OutputDir/")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -61,9 +62,24 @@ CoNI(data1,data2,data2Name="data2",padjustdata2=TRUE,correlateDFs=TRUE,splitData
 %% ~~objects to See Also as \code{\link{help}}, ~~~
 }
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
+#Load gene expression
+data(GeneExp)
+#Samples in rows and genes in columns
+GeneExp <- as.data.frame(t(GeneExp))
+hfd_gene <- GeneExp[1:8,]
+
+#Load metabolite expression
+data(MetaboExp)
+hfd_metabo <- MetaboExp[11:18,]
+
+#Match row names both data sets
+rownames(hfd_metabo)<-rownames(hfd_gene)
+
+#Run CoNI
+CoNIResults <- CoNI(hfd_gene,hfd_metabo,
+                    data1name="HFD_genes",data2name = "HFD_metabolites",
+                    padjustData2 = FALSE,
+                    split_number = 2)
 
 ## The function is currently defined as
 function (x)
