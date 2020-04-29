@@ -1,46 +1,11 @@
 #CoNI Functions
 ############
-#Libraries
-library(dplyr)
-library(tidyr)
-library(ppcor)
-library(RFmarkerDetector)
-require(cocor)
-library(igraph)
-library(ppcor)
-library(plyr)
-library(ggrepel)
 
-#To parallelise loops
-library(foreach)
-library(doParallel)
-library(parallel)
-
-#To filter metabolite data based on variance
-library(genefilter)
-
-#To correlate columns of matrices
-library(lineup)
-library(Hmisc)
-
-#For dendogram samples
-library(flashClust)
-
-library(DESeq2)
-library(tibble)
-
-library(tidyverse)
-
-library(data.table)
-library(readr)
-
-library(venn)
 
 ####################################
 #Functions
 ####################################
-?lm
-CoNI<- function(data1, data2,data2Name="data2", padjustData2=TRUE, correlateDFs=TRUE,splitData1=TRUE,old_split=NULL,split_number=2,outputDir="./CoNIOutput/",iteration_start=1,wait_iteration=0, numCores=6) { #It could be something else
+CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=TRUE, correlateDFs=TRUE,splitData1=TRUE,old_split=NULL,split_number=2,outputDir="./CoNIOutput/",iteration_start=1,wait_iteration=0, numCores=6) { #It could be something else
 
   #Check if input objects are defined
   do_objectsExist(data1,data2)
@@ -58,17 +23,17 @@ CoNI<- function(data1, data2,data2Name="data2", padjustData2=TRUE, correlateDFs=
   colnames(data1)<-make.names(colnames(data1),unique=TRUE)
   colnames(data2)<-make.names(colnames(data2),unique=TRUE)
 
-  if(!file.exists(paste(data2Name,"_Tablesignificant.csv",sep=""))){
+  if(!file.exists(paste(data2name,"_Tablesignificant.csv",sep=""))){
     #Get significant correlations between metabolites
     print("Calculating correlations of data2")
     normMetabo_Tablesignificant<-sig_correlation2(data2,padjustData2)
     #Get indexes for the rows and columns for the metabo data
     normMetabo_Tablesignificant$RowIndex<-apply(normMetabo_Tablesignificant,1,function(x){return(which(colnames(data2)[1:ncol(data2)]==x[1]))})
     normMetabo_Tablesignificant$ColIndex<-apply(normMetabo_Tablesignificant,1,function(x){return(which(colnames(data2)[1:ncol(data2)]==x[2]))})
-    data.table::fwrite(normMetabo_Tablesignificant,paste(data2Name,"_Tablesignificant.csv",sep=""))
-    normMetabo_Tablesignificant<-data.table::fread(paste("./",data2Name,"_Tablesignificant.csv",sep=""))
+    data.table::fwrite(normMetabo_Tablesignificant,paste(data2name,"_Tablesignificant.csv",sep=""))
+    normMetabo_Tablesignificant<-data.table::fread(paste("./",data2name,"_Tablesignificant.csv",sep=""))
   }else{
-    normMetabo_Tablesignificant<-data.table::fread(paste("./",data2Name,"_Tablesignificant.csv",sep=""))
+    normMetabo_Tablesignificant<-data.table::fread(paste("./",data2name,"_Tablesignificant.csv",sep=""))
   }
 
   #Get low variance genes
@@ -78,7 +43,7 @@ CoNI<- function(data1, data2,data2Name="data2", padjustData2=TRUE, correlateDFs=
   #data1<-as.data.frame(data1)
 
   #Get only those genes that correlate with the metabolites
-  if(correlateDFs & !file.exists(paste("./",data2Name,"data1.csv"))){
+  if(correlateDFs & !file.exists(paste("./",data1name,"_",data2name,".csv",sep=""))){
     print("Calculating correlations between data2 and data1")
 
     #Get Column indices of all metabolites
@@ -97,10 +62,10 @@ CoNI<- function(data1, data2,data2Name="data2", padjustData2=TRUE, correlateDFs=
 
     print(paste(length(genesSig),"features were kept from 'big' df",sep=" "))
     data1 <- data1[,genesSig]
-    data.table::fwrite(data1,paste("./",data2Name,"data1.csv"))
-    data1<-data.table::fread(paste("./",data2Name,"data1.csv"))
+    data.table::fwrite(data1,paste("./",data1name,"_",data2name,".csv",sep=""))
+    data1<-data.table::fread(paste("./",data1name,"_",data2name,".csv",sep=""))
   }else if(file.exists("./data1.csv")){
-    data1<-data.table::fread(paste("./",data2Name,"data1.csv"))
+    data1<-data.table::fread(paste("./",data1name,"_",data2name,".csv",sep=""))
   }
 
   if(ncol(data1)*nrow(normMetabo_Tablesignificant)>500){
@@ -130,7 +95,7 @@ CoNI<- function(data1, data2,data2Name="data2", padjustData2=TRUE, correlateDFs=
 
 
       #Register parallel backend
-      library(doSNOW)
+      #library(doSNOW)
       if(is.null(numCores)){
         numCores<-detectCores()-2
         cat("Running parallelization with ",numCores," cores\n",sep="")
@@ -145,7 +110,7 @@ CoNI<- function(data1, data2,data2Name="data2", padjustData2=TRUE, correlateDFs=
       #registerDoParallel(numCores)
 
       df_results = foreach(j = 1:ncol(df_iter), .export =c("df_iter","normMetabo_Tablesignificant","data2","isNA_NAN"),.packages = c("ppcor", "doParallel","cocor") , .combine=rbind,.inorder = FALSE) %dopar% { #Loop table significant metabolites %dopar%
-        results2 =foreach(i = 1:nrow(normMetabo_Tablesignificant), .combine=rbind,.verbose = FALSE,.inorder = FALSE) %dopar% { #Loop genes
+        results2 =foreach(i = 1:nrow(normMetabo_Tablesignificant),.export =c("df_iter","normMetabo_Tablesignificant","data2","isNA_NAN"),.packages = c("ppcor", "doParallel","cocor") , .combine=rbind,.verbose = FALSE,.inorder = FALSE) %dopar% { #Loop genes
           index1<-normMetabo_Tablesignificant[i,6]#Index column of first metabolite
           index2<-normMetabo_Tablesignificant[i,7]#Index column of second metabolite
 
@@ -449,7 +414,7 @@ flattenCorrMatrix <- function(cormat, pmat) {
 #NewFunction more similar to CONI
 #Get significant correlations
 sig_correlation2<-function(input_data1,padj=TRUE){
-  corr<-rcorr(as.matrix(input_data1),type='p')
+  corr<-Hmisc::rcorr(as.matrix(input_data1),type='p')
   corr_table<-flattenCorrMatrix(corr$r,corr$P)
   corr_table$adj.p<-p.adjust(corr_table$p)
 
@@ -569,7 +534,7 @@ generate_network<-function(ResultsCoNI, colorNodesTable){
   results_SteigerAdjust <- ResultsCoNI[,1:3] #Get pair metabolites and gene
 
   #Summarize results for network construction
-  df <- ddply(results_SteigerAdjust,c(1,2),summarize,
+  df <- plyr::ddply(results_SteigerAdjust,c(1,2),plyr::summarize,
               Genes=length(gene_name),
               GenesString=paste0(unique(gene_name),collapse=";"))
   colnames(df) <- c("from","to","weight","Genes")
@@ -586,7 +551,7 @@ generate_network<-function(ResultsCoNI, colorNodesTable){
   colnames(clinksd)[6] <- "weight"
 
   #Create graph
-  netd <- graph_from_data_frame(d=clinksd, vertices=cnodesd, directed=F)
+  netd <- igraph::graph_from_data_frame(d=clinksd, vertices=cnodesd, directed=F)
   netdhfd <- igraph::simplify(netd,remove.multiple=F)
 
   netdhfd
@@ -600,7 +565,7 @@ get_variableName <- function(variable) {
 generate_network_2<-function(ResultsCoNI, colorNodesTable,outputDir="./",outputFileName="ResultsCoNI"){
   results_SteigerAdjust <- ResultsCoNI[,c(1:7)] #Get pair metabolites, gene and pcor and cor information... change to add more information
   #Summarize results for network construction
-  df<-ddply(results_SteigerAdjust,c(1,2),plyr::summarize,
+  df<-plyr::ddply(results_SteigerAdjust,c(1,2),plyr::summarize,
             weightreal=length(gene_name),
             Genes=paste0(unique(gene_name),collapse=";"),
             #ActualGeneNames=paste0(unique(ActualGeneName),collapse=";"),
@@ -624,7 +589,7 @@ generate_network_2<-function(ResultsCoNI, colorNodesTable,outputDir="./",outputF
   #colnames(clinksd)[10] <- "weight"
 
   #Create graph
-  netd <- graph_from_data_frame(d=clinksd, vertices=cnodesd, directed=F)
+  netd <- igraph::graph_from_data_frame(d=clinksd, vertices=cnodesd, directed=F)
   netdhfd <- igraph::simplify(netd,remove.multiple=F)
 
   netdhfd
@@ -637,11 +602,11 @@ find_localRegulatedFeatures<-function(ResultsCoNI,network){
   #Distance = 2 -> Second level neighborhood?
   df <- list()
 
-  for(i in names(V(network))){ #loop nodes of graph
-    l <- V(network)$name[neighbors(network, i)] #Get first level neighbors of node in iteration
+  for(i in names(igraph::V(network))){ #loop nodes of graph
+    l <- igraph::V(network)$name[neighbors(network, i)] #Get first level neighbors of node in iteration
     l1 <- list()
     for(j in l){
-      l1[[j]] <- V(network)$name[neighbors(network, j)]#Loop neighbors of the node in the iteration and get their neighbors (Second level neighborhood)
+      l1[[j]] <- igraph::V(network)$name[neighbors(network, j)]#Loop neighbors of the node in the iteration and get their neighbors (Second level neighborhood)
     }
     l1 <- unique(unlist(l1)) #Get unique 2nd level neighbors
     s <- subset(ResultsCoNI, ((metabolite_name1==i & metabolite_name2 %in% l) | (metabolite_name2==i & metabolite_name1 %in% l)) |
@@ -669,14 +634,14 @@ find_localRegulatedFeatures<-function(ResultsCoNI,network){
 
 tableLRGs_Metabolites<-function(CoNIResults,LRGenes){
   CoNIResults_LRGs<-CoNIResults[CoNIResults$gene_name %in% LRGenes,]
-  Gene_TableLRGs<- ddply(CoNIResults_LRGs, .(metabolite_name1,metabolite_name2), plyr::summarize,
+  Gene_TableLRGs<- plyr::ddply(CoNIResults_LRGs, .(metabolite_name1,metabolite_name2), plyr::summarize,
                          Genes=paste(gene_name,collapse=","))
   #Join Metabolite pairs
   CoNIResults_LRGs_MetaboliteJoined<-unite(CoNIResults_LRGs,MetabolitePair,metabolite_name1,metabolite_name2,sep="-")
   CoNIResults_LRGs_MetaboliteJoined<-CoNIResults_LRGs_MetaboliteJoined[,c(1,2)]
 
   #Chowate table Genes and their corresponding Metabolite pairs
-  LRGs_and_MPairs <- ddply(CoNIResults_LRGs_MetaboliteJoined, .(gene_name), plyr::summarize,
+  LRGs_and_MPairs <- plyr::ddply(CoNIResults_LRGs_MetaboliteJoined, .(gene_name), plyr::summarize,
                            MetabolitePairs=paste(MetabolitePair,collapse=","))
   #Temporary table
   temp<-as.data.frame(CoNIResults_LRGs[,c(1:3)])
