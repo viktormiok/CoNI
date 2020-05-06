@@ -5,15 +5,15 @@
     "dirty" : false,
     "encoding" : "UTF-8",
     "folds" : "",
-    "hash" : "0",
+    "hash" : "1409592987",
     "id" : "53F67C2F",
-    "lastKnownWriteTime" : 1588751696,
-    "last_content_update" : 1588751696847,
+    "lastKnownWriteTime" : 1588757082,
+    "last_content_update" : 1588757082367,
     "path" : "~/CoNI/R/CoNI_functions.R",
     "project_path" : "R/CoNI_functions.R",
     "properties" : {
-        "cursorPosition" : "260,23",
-        "scrollLine" : "249"
+        "cursorPosition" : "61,37",
+        "scrollLine" : "45"
     },
     "read_only" : false,
     "read_only_alternatives" : [

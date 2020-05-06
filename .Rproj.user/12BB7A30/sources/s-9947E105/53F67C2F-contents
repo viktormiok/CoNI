@@ -6,7 +6,7 @@
 ####################################
 #Functions
 ####################################
-CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=TRUE, correlateDFs=TRUE,splitData1=TRUE,old_split=NULL,split_number=2,outputDir="./CoNIOutput/",delPrevious=TRUE,iteration_start=1,wait_iteration=0, numCores=6,verbose=TRUE) {
+CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=TRUE, correlateDFs=TRUE,splitData1=TRUE,old_split=NULL,split_number=2,outputDir="./CoNIOutput/",delPrevious=TRUE,delIntermediaryFiles=TRUE,iteration_start=1,wait_iteration=0, numCores=NULL,verbose=TRUE) {
 
   #Check if input objects are defined
   do_objectsExist(data1,data2,verbose)
@@ -29,8 +29,8 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
 
   if(!file.exists(paste(outputDir,"KeptFeatures_",data2name,".csv",sep=""))){
     #Get significant correlations between metabolites
-    print("Calculating correlations of data2")
-    normMetabo_Tablesignificant<-sig_correlation2(data2,padjustData2)
+    if(verbose){print("Calculating correlations of data2")}
+    normMetabo_Tablesignificant<-sig_correlation2(data2,padjustData2,verbose)
     #Get indexes for the rows and columns for the metabo data
     normMetabo_Tablesignificant$RowIndex<-apply(normMetabo_Tablesignificant,1,function(x){return(which(colnames(data2)[1:ncol(data2)]==x[1]))})
     normMetabo_Tablesignificant$ColIndex<-apply(normMetabo_Tablesignificant,1,function(x){return(which(colnames(data2)[1:ncol(data2)]==x[2]))})
@@ -57,7 +57,7 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
 
     ResultsCorDfs <- sig_correlation2Dfs(SubSetdata2,data1)
     genesSig <- unique(ResultsCorDfs$gene)
-    if(verbose){print(paste(length(genesSig),"features were kept from 'big' df",sep=" "))}
+    if(verbose){print(paste(length(genesSig),"features were kept from data1",sep=" "))}
     data1 <- data1[,genesSig]
     data.table::fwrite(data1,paste(outputDir,"KeptFeatures_",data1name,".csv",sep=""))
     data1<-data.table::fread(paste(outputDir,"KeptFeatures_",data1name,".csv",sep=""))
@@ -65,7 +65,8 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
     data1<-data.table::fread(paste(outputDir,"KeptFeatures_",data1name,".csv",sep=""))
   }
 
-  if(ncol(data1)*nrow(normMetabo_Tablesignificant)>500){
+  if(ncol(data1)*nrow(normMetabo_Tablesignificant)>10000){
+    cat('Too many combinations, split will be performed')
     splitData1<-TRUE
   }
 
@@ -100,7 +101,7 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
         if(verbose){cat("Running parallelization with ",numCores," cores\n",sep="")}
       }
 
-      print(paste('Running CoNI Split Number',i,sep=" "))
+      if(verbose){print(paste('Running CoNI Split Number',i,sep=" "))}
 
       cl<-makeCluster(numCores)
       registerDoSNOW(cl)
@@ -159,14 +160,14 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
       colnames(df_results)<-c("Feature_1_data2",	"Feature_2_data2",	"Feature_data1",	"pcor_coefficient",	"pcor_pvalue",	"cor_coefficient",	"cor_pvalue",	"cdgo_pvalue",	"cdgo2_pvalue")
       df_results<-as.matrix(df_results)
 
-      oldw <- getOption("warn")
-      options(warn = -1)
+      #oldw <- getOption("warn")
+      #options(warn = -1)
 
       #Save result to memory
       writeT<-writeTable(df_results,num_cores = numCores,outputDir = outputDir,iteration = i) #Try to writ using fwrite
       if(!length(writeT)==0){write.csv(df_results,paste(outputDir,"CoNIOutputSplit",i,".csv",sep=""))}#If fwrite fails it is written with write.csv
 
-      options(warn = oldw)
+      #options(warn = oldw)
 
       #Remove results
       rm(df_results)
@@ -175,34 +176,52 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
       iteration_endtime <- Sys.time()
       if(i==iteration_start){
         iteration_time<-difftime(iteration_endtime,start_time,units='mins')
-        cat("Iteration time:",iteration_time,"minutes","\n",sep=" ")
+        if(verbose){cat("Iteration time:",iteration_time,"minutes","\n",sep=" ")}
         iteration_time_between<-iteration_endtime
       }else{
         iteration_time<-difftime(iteration_endtime,iteration_time_between,units='mins')
-        cat("Iteration time:",iteration_time,"minutes","\n",sep=" ")
+        if(verbose){cat("Iteration time:",iteration_time,"minutes","\n",sep=" ")}
         iteration_time_between<-iteration_endtime
       }
 
     }
     #Merge output results CoNI
     CoNIOutput <- merge_outpuSplitFiles(outputDir)
-    print('CoNI ran successfully')
+    #Change column names
+    colnames(CoNIOutput)<-c(paste0("Feature_1_",data2name),	paste0("Feature_2_",data2name),	paste0("Feature_",data1name),	"pcor_coefficient",	"pcor_pvalue",	"cor_coefficient",	"cor_pvalue",	"cdgo_pvalue",	"cdgo2_pvalue")
+    #Save results
+    suppressMessages(data.table::fwrite(CoNIOutput, paste(outputDir,"CoNIOutput.csv",sep=""),nThread=numCores))
+    #Delete intermediary files
+    delIntFiles(delIntermediaryFiles,outputDir)
 
     #Output processing time
     end_time <- Sys.time()
     total_time<-difftime(end_time,start_time,units='hours')
     cat(total_time,"hours", "\n",sep=" ")
-    colnames(CoNIOutput)<-c(paste0("Feature_1_",data2name),	paste0("Feature_2_",data2name),	paste0("Feature_",data1name),	"pcor_coefficient",	"pcor_pvalue",	"cor_coefficient",	"cor_pvalue",	"cdgo_pvalue",	"cdgo2_pvalue")
+    print('CoNI ran successfully')
     return(CoNIOutput)
   }else{
-    print('Split is not necessary. Running standard CoNI...')
+    print('Split was set to FALSE')
     splitData1<-FALSE
   }
 
   if (splitData1==FALSE){
+    #Register parallel backend
+    #library(doSNOW)
+    if(is.null(numCores)){
+      numCores<-detectCores()-2
+      if(verbose){cat("Running parallelization with ",numCores," cores\n",sep="")}
+    }else{
+      if(verbose){cat("Running parallelization with ",numCores," cores\n",sep="")}
+    }
+
+    cl<-makeCluster(numCores)
+    registerDoSNOW(cl)
+
     print('Running CoNI...')
-    df_results = foreach(j = 1:ncol(data1), .combine=rbind, .inorder=FALSE) %dopar% {#Loop genes
-      results2 = foreach(i = 1:nrow(normMetabo_Tablesignificant), .combine=rbind,.inorder=FALSE) %dopar% {#Loop table significant metabolites
+
+    df_results = foreach(j = 1:ncol(data1), .combine=rbind,.packages = c("ppcor", "doParallel","cocor"), .inorder=FALSE) %dopar% {#Loop genes
+      results2 = foreach(i = 1:nrow(normMetabo_Tablesignificant), .combine=rbind,.packages = c("ppcor", "doParallel","cocor") ,.inorder=FALSE) %dopar% {#Loop table significant metabolites
 
         index1<-normMetabo_Tablesignificant[i,6]#Index column of first metabolite
         index2<-normMetabo_Tablesignificant[i,7]#Index column of second metabolite
@@ -244,11 +263,14 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
 
       }
     }
+    colnames(df_results)<-c(paste0("Feature_1_",data2name),	paste0("Feature_2_",data2name),	paste0("Feature_",data1name),	"pcor_coefficient",	"pcor_pvalue",	"cor_coefficient",	"cor_pvalue",	"cdgo_pvalue",	"cdgo2_pvalue")
+    #Save results
+    suppressMessages(data.table::fwrite(df_results, paste(outputDir,"CoNIOutput.csv",sep=""),nThread=numCores))
+
     #Output processing time
-    print('CoNI ran successfully')
     end_time <- Sys.time()
     print(end_time - start_time)
-    colnames(df_results)<-c(paste0("Feature_1_",data2name),	paste0("Feature_2_",data2name),	paste0("Feature_",data1name),	"pcor_coefficient",	"pcor_pvalue",	"cor_coefficient",	"cor_pvalue",	"cdgo_pvalue",	"cdgo2_pvalue")
+    print('CoNI ran successfully')
     return(df_results)
   }
 
@@ -409,7 +431,7 @@ writeTable <- function(results_write,num_cores,outputDir,iteration) {
 #This function checks previous files and deletes according to the User input option
 check_previous<-function(del,iteration,outDir,verb=verbose){
   if(del){
-    filesDel<-list.files(outDir,pattern = "CoNIOutputSplit")
+    filesDel<-list.files(outDir,pattern = "CoNIOutput")
     if(length(filesDel)>0){
       sapply(filesDel, function(f){file.remove(paste0(outDir,f))})
     }
@@ -429,6 +451,15 @@ check_previous<-function(del,iteration,outDir,verb=verbose){
     }
   }
 }
+
+delIntFiles<-function(del,outDir){
+  if(del){
+    filesDel<-list.files(outDir,pattern = "CoNIOutputSplit")
+    sapply(filesDel, function(f){file.remove(paste0(outDir,f))})
+  }
+
+}
+
 
 #This function tests if the result of a calculation is NA or NAN
 isNA_NAN<-function(result){
@@ -568,7 +599,7 @@ flattenCorrMatrix <- function(cormat, pmat) {
 
 #NewFunction more similar to CONI
 #Get significant correlations
-sig_correlation2<-function(input_data1,padj=TRUE){
+sig_correlation2<-function(input_data1,padj=TRUE, verb=verbose){
   corr<-Hmisc::rcorr(as.matrix(input_data1),type='p')
   corr_table<-flattenCorrMatrix(corr$r,corr$P)
   corr_table$adj.p<-p.adjust(corr_table$p)
@@ -576,14 +607,14 @@ sig_correlation2<-function(input_data1,padj=TRUE){
   if(padj){
     corr_tableSig <- corr_table %>% filter(adj.p<0.05)
     if(nrow(corr_tableSig) == 0){
-      print('No features significantly correlate after padjustment for the reduced df')
+      print('No features significantly correlate after padjustment for data2')
       print('Using non adjusted pvalues')
       corr_tableSig<-corr_table %>% filter(p<0.05)}
   }else{
-    print("Ajustment for multiple testing was set to FALSE for 'small' df")
+    print("Ajustment for multiple testing was set to FALSE for correlations in data2")
     corr_tableSig<-corr_table %>% filter(p<0.05)
   }
-  print(paste('Significant correlations',nrow(corr_tableSig),sep=" "))
+  if(verb){print(paste('Significant correlations',nrow(corr_tableSig),sep=" "))}
   corr_tableSig
 }
 
