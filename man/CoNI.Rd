@@ -81,10 +81,6 @@ CoNIResults <- CoNI(hfd_gene,hfd_metabo,
                     padjustData2 = FALSE,
                     split_number = 2)
 
-## The function is currently defined as
-function (x)
-{
-  }
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

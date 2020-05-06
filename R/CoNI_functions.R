@@ -199,8 +199,6 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
     splitData1<-FALSE
   }
 
-
-
   if (splitData1==FALSE){
     print('Running CoNI...')
     df_results = foreach(j = 1:ncol(data1), .combine=rbind, .inorder=FALSE) %dopar% {#Loop genes
@@ -255,6 +253,140 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
   }
 
 }
+
+#################
+#Ratios approach
+
+#Calculate log2FoldChanges
+calculateLog2FoldChange<-function(matx){
+  matx<-as.matrix(matx)
+  combinations<-combn(ncol(matx),2) #Get all possible combination
+  mat <- matrix(, nrow = nrow(matx), ncol = ncol(combinations)) #create empty matrix to assign all possible combinations
+  namesResults<-c()
+  for (col in 1:ncol(combinations)){
+    index1<-combinations[1,col]
+    index2<-combinations[2,col]
+
+    #Names
+    met1_name<-colnames(matx)[index1]
+    met2_name<-colnames(matx)[index2]
+    nameComb<-paste(met1_name,"__",met2_name,sep = "")
+    namesResults<-c(namesResults,nameComb)
+
+    #Log2FoldChange
+    foldChange<- matx[,index1]/matx[,index2]
+    log2FC<- log(foldChange,2)
+    mat[,col]<-log2FC
+  }
+  colnames(mat)<-namesResults
+  mat
+}
+
+RaReNI <- function(gene_exp, log2FCData,NormMetaboName="",
+                            padjustSmallDF=TRUE,
+                            correlateDFs=TRUE,
+                            splitAbundantDF=TRUE,
+                            split_number=10,
+                            split_number2=NULL,
+                            outputDir="./RaReNIResults/",
+                            iteration_start=1,
+                            wait_iteration=5,
+                            numCores=6) { #It could be something else
+
+  #Check if input objects are defined
+  do_objectsExist(gene_exp,norm_metabo_dat)
+
+  #Check if output directory exists
+  check_outputDir(outputDir)
+
+  #Start measuring time
+  start_time <- Sys.time()
+
+  #Check if output directory exists
+  #check_outputDir(outputDir)
+
+  #Test if sample names are the same in both data sets
+  #compare_sampleNames(gene_exp,norm_metabo_dat)
+
+  #Make sure column names are appropiate
+  colnames(gene_exp)<-make.names(colnames(gene_exp),unique=TRUE)
+  colnames(log2FCData)<-make.names(colnames(log2FCData),unique=TRUE)
+
+  #Split Data Frame
+  if(splitAbundantDF){
+
+    #Split Log2FC data in parts
+    ls_dfs<-split_df(log2FCData,split_number,split_number2)
+    print(paste("Log2FC Data df will be split into",length(ls_dfs),"parts",sep=" "))
+
+    #Loop Log2FC parts
+    for (i in iteration_start:length(ls_dfs)){
+      df_iter<-ls_dfs[[i]]
+      print(paste('Running RaReNI Split Number',i,sep=" "))
+
+      #Register parallel backend
+      library(doSNOW)
+      cl<-makeCluster(numCores)
+      registerDoSNOW(cl)
+      #registerDoParallel(numCores)
+
+      df_results = foreach(i = 1:ncol(df_iter), .export =c("gene_exp","df_iter","get_variableName"),.packages = c("ppcor", "doParallel","cocor") , .combine=rbind,.inorder = FALSE) %dopar% { #Loop log2FC data
+        results2 =foreach(j = 1:ncol(gene_exp),.packages = c("ppcor", "doParallel","cocor") , .combine=rbind,.verbose = FALSE,.inorder = FALSE) %dopar% { #Loop genes
+
+          #Get names
+          GeneName<-colnames(gene_exp)[j] #gene name
+          LFC2Name<-colnames(df_iter)[i] #log2Fold change between metabolite pair...
+
+          #Vectors
+          geneVec<-gene_exp[,j]
+          LFCMetVec<-df_iter[,i]
+
+          #Linear model
+          #Linear model
+          lmIter <- lm(LFCMetVec~geneVec)
+          modelSummary <- summary(lmIter)  # capture model summary as an object
+          modelCoeffs <- modelSummary$coefficients  # model coefficients
+          beta.estimate <- modelCoeffs[get_variableName(geneVec), "Estimate"]  # get beta estimate for speed
+          std.error <- modelCoeffs[get_variableName(geneVec), "Std. Error"]  # get std.error for speed
+          t_value <- beta.estimate/std.error  # calc t statistic
+          p_value <- modelCoeffs[get_variableName(geneVec), "Pr(>|t|)"] # calc p Value
+          p_adjust<-p.adjust(p_value)
+          f_statistic <- modelSummary$fstatistic[[1]]  # fstatistic
+          f <- summary(lmIter)$fstatistic  # parameters for model p-value calc
+          model_p <- pf(f[1], f[2], f[3], lower=FALSE)[[1]] #model p-value
+          model_p_adjust<-p.adjust(model_p)
+          rsquared <- summary(lmIter)$r.squared
+          rsquare_adj <- summary(lmIter)$adj.r.squared
+
+          rowtoprint<-list(LFC2Name,GeneName, #change to list instead of cbind.data.frame
+                           beta.estimate,std.error,t_value,p_value,p_adjust,
+                           f_statistic,model_p,model_p_adjust,rsquared,rsquare_adj)
+        }
+      }
+
+      stopCluster(cl)
+
+      df_results<-as.data.frame(df_results)
+      colnames(df_results)<-c("MetabolitePair",	"gene_name",	"beta.estimate",	"std.error",	"t_value",	"p_value",	"f_statistic",	"model_pvalue","r_squared","adjusted_r_squared")
+      df_results<-as.matrix(df_results)
+
+
+      #Save result to memory
+      writeT<-writeTable(df_results,num_cores = numCores,outputDir = outputDir,iteration = i) #Try to write using fwrite
+      if(!length(writeT)==0){write.csv(df_results,paste(outputDir,"RaReNIResultsSplit",i,".csv",sep=""))}#If fwrite fails it is written with write.csv
+
+      #Remove results
+      rm(df_results)
+    }
+    #Merge output results CoNI
+    RaReNIResults <- merge_outpuSplitFiles(outputDir)
+    print('RaReNI ran successfully')
+    return(RaReNIResults)
+  }
+}
+
+
+
 
 
 #This function tries to write a table with fread
