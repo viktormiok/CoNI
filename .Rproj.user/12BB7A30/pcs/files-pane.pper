@@ -1,9 +1,9 @@
 {
-    "path" : "~/CoNI/man",
-    "sortOrder" : [
+    "path": "~/CoNI/R",
+    "sortOrder": [
         {
-            "ascending" : true,
-            "columnIndex" : 2
+            "columnIndex": 2,
+            "ascending": false
         }
     ]
 }

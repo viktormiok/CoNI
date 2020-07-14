@@ -1,15 +1,13 @@
 #CoNI Functions
 ############
 
-
-
 ####################################
 #Functions
 ####################################
-CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=TRUE, correlateDFs=TRUE,splitData1=TRUE,old_split=NULL,split_number=2,outputDir="./CoNIOutput/",delPrevious=TRUE,delIntermediaryFiles=TRUE,iteration_start=1,wait_iteration=0, numCores=NULL,verbose=TRUE) {
+CoNI<- function(driverD, linkedD,outputName="CoNIOutput",driverDname="driverD",linkedDname="linkedD",padjustlinkedD=TRUE, correlateDFs=TRUE,splitdriverD=TRUE,split_number=2,outputDir="./CoNIOutput/",delPrevious=TRUE,delIntermediaryFiles=TRUE,iteration_start=1,wait_iteration=0,numCores=NULL,verbose=TRUE,inhouseSteigerPcor=FALSE) {
 
   #Check if input objects are defined
-  do_objectsExist(data1,data2,verbose)
+  do_objectsExist(driverD,linkedD,verbose)
 
   #Start measuring time
   start_time <- Sys.time()
@@ -21,60 +19,60 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
   check_previous(delPrevious,iteration=iteration_start,outDir=outputDir,verb=verbose)
 
   #Test if sample names are the same in both data sets
-  compare_sampleNames(data1,data2)
+  compare_sampleNames(driverD,linkedD)
 
   #Make sure column names are appropiate
-  colnames(data1)<-make.names(colnames(data1),unique=TRUE)
-  colnames(data2)<-make.names(colnames(data2),unique=TRUE)
+  colnames(driverD)<-make.names(colnames(driverD),unique=TRUE)
+  colnames(linkedD)<-make.names(colnames(linkedD),unique=TRUE)
 
-  if(!file.exists(paste(outputDir,"KeptFeatures_",data2name,".csv",sep=""))){
+  if(!file.exists(paste(outputDir,"KeptFeatures_",linkedDname,".csv",sep=""))){
     #Get significant correlations between metabolites
-    if(verbose){print("Calculating correlations of data2")}
-    normMetabo_Tablesignificant<-sig_correlation2(data2,padjustData2,verbose)
+    if(verbose){print("Calculating correlations of linked Data")}
+    normMetabo_Tablesignificant<-sig_correlation2(linkedD,padjustlinkedD,verbose)
     #Get indexes for the rows and columns for the metabo data
-    normMetabo_Tablesignificant$RowIndex<-apply(normMetabo_Tablesignificant,1,function(x){return(which(colnames(data2)[1:ncol(data2)]==x[1]))})
-    normMetabo_Tablesignificant$ColIndex<-apply(normMetabo_Tablesignificant,1,function(x){return(which(colnames(data2)[1:ncol(data2)]==x[2]))})
-    data.table::fwrite(normMetabo_Tablesignificant,paste(outputDir,"KeptFeatures_",data2name,".csv",sep=""))
-    normMetabo_Tablesignificant<-data.table::fread(paste(outputDir,"KeptFeatures_",data2name,".csv",sep=""))
+    normMetabo_Tablesignificant$RowIndex<-apply(normMetabo_Tablesignificant,1,function(x){return(which(colnames(linkedD)[1:ncol(linkedD)]==x[1]))})
+    normMetabo_Tablesignificant$ColIndex<-apply(normMetabo_Tablesignificant,1,function(x){return(which(colnames(linkedD)[1:ncol(linkedD)]==x[2]))})
+    data.table::fwrite(normMetabo_Tablesignificant,paste(outputDir,"KeptFeatures_",linkedDname,".csv",sep=""))
+    normMetabo_Tablesignificant<-data.table::fread(paste(outputDir,"KeptFeatures_",linkedDname,".csv",sep=""))
   }else{
-    normMetabo_Tablesignificant<-data.table::fread(paste(outputDir,"KeptFeatures_",data2name,".csv",sep=""))
+    normMetabo_Tablesignificant<-data.table::fread(paste(outputDir,"KeptFeatures_",linkedDname,".csv",sep=""))
   }
 
   #Get low variance genes
-  data1<-get_lowvarFeatures(data1) #This step was criticised
+  driverD<-get_lowvarFeatures(driverD) #This step was criticised
   #Remove those with too many zeros
-  data1 <- data1[, which(as.numeric(colSums(data1 != 0)) > ceiling(nrow(data1)/2))] #At least two samples have a value higher than zero
-  #data1<-as.data.frame(data1)
+  driverD <- driverD[, which(as.numeric(colSums(driverD != 0)) > ceiling(nrow(driverD)/2))] #At least two samples have a value higher than zero
+  #driverD<-as.data.frame(driverD)
 
   #Get only those genes that correlate with the metabolites
-  if(correlateDFs & !file.exists(paste(outputDir,"KeptFeatures_",data1name,".csv",sep=""))){
-    if(verbose){print("Calculating correlations between data2 and data1")}
+  if(correlateDFs & !file.exists(paste(outputDir,"KeptFeatures_",driverDname,".csv",sep=""))){
+    if(verbose){print("Calculating correlations between linked Data and driver Data")}
 
     #Get Column indices of all metabolites
     metabo_indices<-unique(c(normMetabo_Tablesignificant$RowIndex,normMetabo_Tablesignificant$ColIndex))
     #Subset metabolites to correlate with genes
-    SubSetdata2<-data2[,metabo_indices]
+    SubSetlinkedD<-linkedD[,metabo_indices]
 
-    ResultsCorDfs <- sig_correlation2Dfs(SubSetdata2,data1)
+    ResultsCorDfs <- sig_correlation2Dfs(SubSetlinkedD,driverD)
     genesSig <- unique(ResultsCorDfs$gene)
-    if(verbose){print(paste(length(genesSig),"features were kept from data1",sep=" "))}
-    data1 <- data1[,genesSig]
-    data.table::fwrite(data1,paste(outputDir,"KeptFeatures_",data1name,".csv",sep=""))
-    data1<-data.table::fread(paste(outputDir,"KeptFeatures_",data1name,".csv",sep=""))
-  }else if(file.exists(paste(outputDir,"KeptFeatures_",data1name,".csv",sep=""))){
-    data1<-data.table::fread(paste(outputDir,"KeptFeatures_",data1name,".csv",sep=""))
+    if(verbose){print(paste(length(genesSig),"features were kept from driver Data",sep=" "))}
+    driverD <- driverD[,genesSig]
+    data.table::fwrite(driverD,paste(outputDir,"KeptFeatures_",driverDname,".csv",sep=""))
+    driverD<-data.table::fread(paste(outputDir,"KeptFeatures_",driverDname,".csv",sep=""))
+  }else if(file.exists(paste(outputDir,"KeptFeatures_",driverDname,".csv",sep=""))){
+    driverD<-data.table::fread(paste(outputDir,"KeptFeatures_",driverDname,".csv",sep=""))
   }
 
-  if(ncol(data1)*nrow(normMetabo_Tablesignificant)>10000){
+  if(ncol(driverD)*nrow(normMetabo_Tablesignificant)>10000){
     cat('Too many combinations, split will be performed')
-    splitData1<-TRUE
+    splitdriverD<-TRUE
   }
 
   #Split Data Frame
-  if(splitData1){
+  if(splitdriverD){
 
-    ls_dfs<-split_df(data1,old_split,split_number)
-    print(paste("Data1 was split into",length(ls_dfs),"parts",sep=" "))
+    ls_dfs<-split_df(driverD,split_number)
+    print(paste("Driver Data was split into",length(ls_dfs),"parts",sep=" "))
 
     for (i in iteration_start:length(ls_dfs)){
       df_iter<-ls_dfs[[i]]
@@ -113,43 +111,143 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
           index2<-normMetabo_Tablesignificant[i,7]#Index column of second metabolite
 
           #Get metabolites names and gene name
-          Feature_1_data2<-normMetabo_Tablesignificant[i,1]
-          Feature_2_data2<-normMetabo_Tablesignificant[i,2]
-          Feature_data1<-colnames(df_iter)[j]
+          Feature_1_linkedD<-normMetabo_Tablesignificant[i,1]
+          Feature_2_linkedD<-normMetabo_Tablesignificant[i,2]
+          Feature_driverD<-colnames(df_iter)[j]
 
           #Get correlation between metabolites
           cor_coefficient<-normMetabo_Tablesignificant[i,3]
           cor_pvalue<-normMetabo_Tablesignificant[i,4]
 
+          #############################
           #Calculate partial correlation between metabolites partialing out gene
-          pcor_result<-pcor.test(data2[,index1],data2[,index2],df_iter[,j],method="p")
-          pcor_pvalue<-pcor_result[[2]]
-          pcor_coefficient<-pcor_result[[1]]
+          #j=metabolite1,k=metabolite2,h=gene
+          #r.jk_h
+          if(inhouseSteigerPcor){#Not functional modify...
 
-          #Sometimes the computer is not precise in float representation...
-          if(pcor_coefficient > 1){
-            pcor_coefficient<-0.999
-          }else if(pcor_coefficient < -1){
-            pcor_coefficient<- -0.999
+            #Part of original output
+            pcor_result<-pcor.test(linkedD[,index1],linkedD[,index2],df_iter[,j],method="p")
+            pcor_pvalue<-pcor_result[[2]]
+            pcor_coefficient<-pcor_result[[1]]
+
+            #########################################
+            #New Test using partial correlation values
+            #r.kh_j or r.jh_k
+            #Metabolite 2 and Gene | Metabolite 1
+            pcor_res_kh_j<-pcor.test(linkedD[,index2],df_iter[,j],linkedD[,index2],method="p")
+            pcor_res_kh_jCoef<-pcor_res_kh_j[[1]]
+            pcor_res_kh_jpval<-pcor_res_kh_j[[2]]
+
+            #Metabolite 1 and Gene | Metabolite 2
+            pcor_res_jh_k<-pcor.test(linkedD[,index1],df_iter[,j],linkedD[,index2],method="p")
+            pcor_res_jh_kCoef<-pcor_res_jh_k[[1]]
+            pcor_res_jh_kpval<-pcor_res_jh_k[[2]]
+
+            #Metabolite 1 and Metabolite 2 | Gene
+            pcor_res_jk_h<-pcor.test(linkedD[,index1],linkedD[,index2],df_iter[,j],method="p")
+            pcor_res_jk_hCoef<-pcor_res_jk_h[[1]]
+            pcor_res_jk_hpval<-pcor_res_jk_h[[2]]
+
+
+            TSteigerPcorInput<- cocor.dep.groups.overlap(r.jk=pcor_res_jh_kCoef, r.jh=pcor_res_kh_jCoef, r.kh=pcor_res_jk_hCoef, n=nrow(linkedD),
+                                             alternative="two.sided", alpha=0.05, conf.level=0.95, null.value=0, test='steiger1980')
+
+            TSteigerPcorInput_pvalue<-TSteigerPcorInput@steiger1980$p.value
+
+            direction<-ifelse(cor_coefficient==pcor_res_jk_hCoef,"equal",ifelse(cor_coefficient<pcor_res_jk_hCoef,"increase","decrease"))
+
+            #Original output
+            pcor_result<-pcor.test(linkedD[,index1],linkedD[,index2],df_iter[,j],method="p")
+            pcor_pvalue<-pcor_result[[2]]
+            pcor_coefficient<-pcor_result[[1]]
+
+            #Sometimes the computer is not precise in float representation...
+            if(pcor_coefficient > 1){
+              pcor_coefficient<-0.999
+            }else if(pcor_coefficient < -1){
+              pcor_coefficient<- -0.999
+            }
+
+            #Correlation metabolites vs gene
+            cor_m1_vs_g <- cor(linkedD[,index1],df_iter[,j])
+            cor_m2_vs_g <- cor(linkedD[,index2],df_iter[,j])
+
+            #Test if partialcorrelation coefficient differs from correlation coefficient
+            cdgo <- cocor.dep.groups.overlap(r.jk=cor_coefficient[[1]], r.jh=pcor_coefficient, r.kh=cor_m1_vs_g[1], n=nrow(linkedD),
+                                             alternative="two.sided", alpha=0.05, conf.level=0.95, null.value=0, test='steiger1980')
+
+            cdgo2 <- cocor.dep.groups.overlap(r.jk=cor_coefficient[[1]], r.jh=pcor_coefficient, r.kh=cor_m2_vs_g[1], n=nrow(linkedD),
+                                              alternative="two.sided", alpha=0.05, conf.level=0.95, null.value=0, test='steiger1980')
+
+            cdgo_pvalue <- cdgo@steiger1980$p.value
+            cdgo2_pvalue<- cdgo2@steiger1980$p.value
+
+            #############
+            #D suggestion
+            #New Test
+            SteigerM1M2_M1G<- cocor.dep.groups.overlap(r.jk=cor_coefficient[[1]], r.jh=cor_m1_vs_g, r.kh=cor_m2_vs_g, n=nrow(linkedD),
+                                                       alternative="two.sided", alpha=0.05, conf.level=0.95, null.value=0, test='steiger1980')
+            SteigerM1M2_M1G_pvalue<-SteigerM1M2_M1G@steiger1980$p.value
+
+            SteigerM1M2_M2G<- cocor.dep.groups.overlap(r.jk=cor_coefficient[[1]], r.jh=cor_m2_vs_g, r.kh=cor_m1_vs_g, n=nrow(linkedD),
+                                                       alternative="two.sided", alpha=0.05, conf.level=0.95, null.value=0, test='steiger1980')
+            SteigerM1M2_M2G_pvalue<-SteigerM1M2_M2G@steiger1980$p.value
+
+
+
+
+            rowtoprint<-list(Feature_1_linkedD,Feature_2_linkedD,Feature_driverD, #change to list instead of cbind.data.frame
+                             pcor_coefficient,pcor_pvalue,cor_coefficient,
+                             cor_pvalue,cdgo_pvalue,cdgo2_pvalue,pcor_res_kh_jCoef,pcor_res_jh_kCoef,cor_coefficient,pcor_res_jk_hCoef,direction,TSteigerPcorInput_pvalue,SteigerM1M2_M1G_pvalue,SteigerM1M2_M2G_pvalue)
+
+            #New test
+            # cdgo <- cocor.dep.groups.overlap_inHouse(r.jk=cor_coefficient[[1]], r.jk_h = pcor_coefficient,r.kh_j = pcor_res_kh_jCoef,
+            #                                          n = nrow(linkedD),alternative="two.sided", alpha=0.05, conf.level=0.95)
+            # cdgo_pvalue<-cdgo$p.value
+            # #
+            # # cdgo2 <- cocor.dep.groups.overlap_inHouse(r.jk=cor_coefficient[[1]], r.jk_h = pcor_coefficient,r.kh_j = pcor_res_jh_kCoef,
+            # #                                          n = nrow(linkedD),alternative="two.sided", alpha=0.05, conf.level=0.95)
+            # # cdgo2_pvalue<-cdgo2$p.value
+            #
+            # rowtoprint<-list(Feature_1_linkedD,Feature_2_linkedD,Feature_driverD, #change to list instead of cbind.data.frame
+            #                  pcor_coefficient,pcor_pvalue,cor_coefficient,
+            #                  cor_pvalue,cdgo_pvalue,cdgo2_pvalue)
+          }else{
+            #Calculate partial correlation between metabolites partialing out gene
+            pcor_result<-pcor.test(linkedD[,index1],linkedD[,index2],df_iter[,j],method="p")
+            pcor_pvalue<-pcor_result[[2]]
+            pcor_coefficient<-pcor_result[[1]]
+
+            #Sometimes the computer is not precise in float representation...
+            if(pcor_coefficient > 1){
+              pcor_coefficient<-0.999
+            }else if(pcor_coefficient < -1){
+              pcor_coefficient<- -0.999
+            }
+
+            #Correlation metabolites vs gene
+            cor_m1_vs_g <- cor(linkedD[,index1],df_iter[,j])
+            cor_m2_vs_g <- cor(linkedD[,index2],df_iter[,j])
+
+            #Test if partialcorrelation coefficient differs from correlation coefficient
+            cdgo <- cocor.dep.groups.overlap(r.jk=cor_coefficient[[1]], r.jh=pcor_coefficient, r.kh=cor_m1_vs_g[1], n=nrow(linkedD),
+                                             alternative="two.sided", alpha=0.05, conf.level=0.95, null.value=0, test='steiger1980')
+
+            cdgo2 <- cocor.dep.groups.overlap(r.jk=cor_coefficient[[1]], r.jh=pcor_coefficient, r.kh=cor_m2_vs_g[1], n=nrow(linkedD),
+                                              alternative="two.sided", alpha=0.05, conf.level=0.95, null.value=0, test='steiger1980')
+
+            cdgo_pvalue <- cdgo@steiger1980$p.value
+            cdgo2_pvalue<- cdgo2@steiger1980$p.value
+
+            rowtoprint<-list(Feature_1_linkedD,Feature_2_linkedD,Feature_driverD, #change to list instead of cbind.data.frame
+                             pcor_coefficient,pcor_pvalue,cor_coefficient,
+                             cor_pvalue,cdgo_pvalue,cdgo2_pvalue)
+
           }
+          #############################
 
-          #Correlation metabolites vs gene
-          cor_m1_vs_g <- cor(data2[,index1],df_iter[,j])
-          cor_m2_vs_g <- cor(data2[,index2],df_iter[,j])
 
-          #Test if partialcorrelation coefficient differs from correlation coefficient
-          cdgo <- cocor.dep.groups.overlap(r.jk=cor_coefficient[[1]], r.jh=pcor_coefficient, r.kh=cor_m1_vs_g[1], n=nrow(data2),
-                                           alternative="two.sided", alpha=0.05, conf.level=0.95, null.value=0, test='steiger1980')
 
-          cdgo2 <- cocor.dep.groups.overlap(r.jk=cor_coefficient[[1]], r.jh=pcor_coefficient, r.kh=cor_m2_vs_g[1], n=nrow(data2),
-                                            alternative="two.sided", alpha=0.05, conf.level=0.95, null.value=0, test='steiger1980')
-
-          cdgo_pvalue <- cdgo@steiger1980$p.value
-          cdgo2_pvalue<- cdgo2@steiger1980$p.value
-
-          rowtoprint<-list(Feature_1_data2,Feature_2_data2,Feature_data1, #change to list instead of cbind.data.frame
-                           pcor_coefficient,pcor_pvalue,cor_coefficient,
-                           cor_pvalue,cdgo_pvalue,cdgo2_pvalue)
         }
       }
       stopCluster(cl)
@@ -157,7 +255,12 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
       #Get rid of rows with only NAs --> Not working...
       #df_results<-df_results[rowSums(is.na(df_results)) != ncol(df_results), ]
       df_results<-as.data.frame(df_results)
-      colnames(df_results)<-c("Feature_1_data2",	"Feature_2_data2",	"Feature_data1",	"pcor_coefficient",	"pcor_pvalue",	"cor_coefficient",	"cor_pvalue",	"cdgo_pvalue",	"cdgo2_pvalue")
+      #Note cor_coefficient is the same as Cor_M1M2
+      if(inhouseSteigerPcor){
+        colnames(df_results)<-c("Feature_1_linkedD",	"Feature_2_linkedD",	"Feature_driverD",	"pcor_coefficient",	"pcor_pvalue",	"cor_coefficient",	"cor_pvalue",	"cdgo_pvalue",	"cdgo2_pvalue","Pcor_M2G_M1","Pcor_M1G_M2","Cor_M1M2","Pcor_M1M2_G","Direction","NewTESTPcor","SteigerM1M2_M1G","SteigerM1M2_M2G")
+      }else{
+        colnames(df_results)<-c("Feature_1_linkedD",	"Feature_2_linkedD",	"Feature_driverD",	"pcor_coefficient",	"pcor_pvalue",	"cor_coefficient",	"cor_pvalue",	"cdgo_pvalue",	"cdgo2_pvalue")
+      }
       df_results<-as.matrix(df_results)
 
       #oldw <- getOption("warn")
@@ -188,9 +291,17 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
     #Merge output results CoNI
     CoNIOutput <- merge_outpuSplitFiles(outputDir)
     #Change column names
-    colnames(CoNIOutput)<-c(paste0("Feature_1_",data2name),	paste0("Feature_2_",data2name),	paste0("Feature_",data1name),	"pcor_coefficient",	"pcor_pvalue",	"cor_coefficient",	"cor_pvalue",	"cdgo_pvalue",	"cdgo2_pvalue")
+    #colnames(CoNIOutput)<-c(paste0("Feature_1_",linkedDname),	paste0("Feature_2_",linkedDname),	paste0("Feature_",driverDname),	"pcor_coefficient",	"pcor_pvalue",	"cor_coefficient",	"cor_pvalue",	"cdgo_pvalue",	"cdgo2_pvalue")
+
+    #################
+    #This step might be problematic with very big data... I need to add an alternative way
+    #To do... add alternative method for adjusted steiger
+    #Add adjusted steiger pvalue
+    #CoNIOutput$cdgo_adjusted<-p.adjust(CoNIOutput$cdgo_pvalue)
+    #CoNIOutput$cdgo2_adjusted<-p.adjust(CoNIOutput$cdgo2_pvalue)
+
     #Save results
-    suppressMessages(data.table::fwrite(CoNIOutput, paste(outputDir,"CoNIOutput.csv",sep=""),nThread=numCores))
+    suppressMessages(data.table::fwrite(CoNIOutput, paste(outputDir,outputName,".csv",sep=""),nThread=numCores))
     #Delete intermediary files
     delIntFiles(delIntermediaryFiles,outputDir)
 
@@ -202,10 +313,10 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
     return(CoNIOutput)
   }else{
     print('Split was set to FALSE')
-    splitData1<-FALSE
+    splitdriverD<-FALSE
   }
 
-  if (splitData1==FALSE){
+  if (splitdriverD==FALSE){
     #Register parallel backend
     #library(doSNOW)
     if(is.null(numCores)){
@@ -220,23 +331,23 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
 
     print('Running CoNI...')
 
-    df_results = foreach(j = 1:ncol(data1), .combine=rbind,.packages = c("ppcor", "doParallel","cocor"), .inorder=FALSE) %dopar% {#Loop genes
+    df_results = foreach(j = 1:ncol(driverD), .combine=rbind,.packages = c("ppcor", "doParallel","cocor"), .inorder=FALSE) %dopar% {#Loop genes
       results2 = foreach(i = 1:nrow(normMetabo_Tablesignificant), .combine=rbind,.packages = c("ppcor", "doParallel","cocor") ,.inorder=FALSE) %dopar% {#Loop table significant metabolites
 
         index1<-normMetabo_Tablesignificant[i,6]#Index column of first metabolite
         index2<-normMetabo_Tablesignificant[i,7]#Index column of second metabolite
 
         #Get metabolites names and gene name
-        Feature_1_data2<-normMetabo_Tablesignificant[i,1]
-        Feature_2_data2<-normMetabo_Tablesignificant[i,2]
-        Feature_data1<-colnames(data1)[j]
+        Feature_1_linkedD<-normMetabo_Tablesignificant[i,1]
+        Feature_2_linkedD<-normMetabo_Tablesignificant[i,2]
+        Feature_driverD<-colnames(driverD)[j]
 
         #Get correlation between metabolites
         cor_coefficient<-normMetabo_Tablesignificant[i,3]
         cor_pvalue<-normMetabo_Tablesignificant[i,4]
 
         #Calculate partial correlation between metabolites partialing out gene
-        pcor_result<-pcor.test(data2[,index1],data2[,index2],data1[,j],method="p")
+        pcor_result<-pcor.test(linkedD[,index1],linkedD[,index2],driverD[,j],method="p")
         pcor_pvalue<-pcor_result[[2]]
         pcor_coefficient<-pcor_result[[1]]
 
@@ -247,25 +358,25 @@ CoNI<- function(data1, data2,data1name="data1",data2name="data2", padjustData2=T
         }
 
         #Correlation metabolites vs gene
-        cor_m1_vs_g <- cor(data2[,index1],data1[,j])
-        cor_m2_vs_g <- cor(data2[,index2],data1[,j])
+        cor_m1_vs_g <- cor(linkedD[,index1],driverD[,j])
+        cor_m2_vs_g <- cor(linkedD[,index2],driverD[,j])
 
         #Test if partialcorrelation coefficient differs from correlation coefficient
-        cdgo <- cocor.dep.groups.overlap(r.jk=cor_coefficient[[1]], r.jh=pcor_coefficient, r.kh=cor_m1_vs_g[1], n=nrow(data2),
+        cdgo <- cocor.dep.groups.overlap(r.jk=cor_coefficient[[1]], r.jh=pcor_coefficient, r.kh=cor_m1_vs_g[1], n=nrow(linkedD),
                                          alternative="two.sided", alpha=0.05, conf.level=0.95, null.value=0, test='steiger1980')
-        cdgo2 <- cocor.dep.groups.overlap(r.jk=cor_coefficient[[1]], r.jh=pcor_coefficient, r.kh=cor_m2_vs_g[1], n=nrow(data2),
+        cdgo2 <- cocor.dep.groups.overlap(r.jk=cor_coefficient[[1]], r.jh=pcor_coefficient, r.kh=cor_m2_vs_g[1], n=nrow(linkedD),
                                           alternative="two.sided", alpha=0.05, conf.level=0.95, null.value=0, test='steiger1980')
         cdgo_pvalue <- cdgo@steiger1980$p.value
         cdgo2_pvalue<- cdgo2@steiger1980$p.value
-        rowtoprint<-cbind.data.frame(Feature_1_data2,Feature_2_data2,Feature_data1,
+        rowtoprint<-cbind.data.frame(Feature_1_linkedD,Feature_2_linkedD,Feature_driverD,
                                      pcor_coefficient,pcor_pvalue,cor_coefficient,
                                      cor_pvalue,cdgo_pvalue,cdgo2_pvalue)
 
       }
     }
-    colnames(df_results)<-c(paste0("Feature_1_",data2name),	paste0("Feature_2_",data2name),	paste0("Feature_",data1name),	"pcor_coefficient",	"pcor_pvalue",	"cor_coefficient",	"cor_pvalue",	"cdgo_pvalue",	"cdgo2_pvalue")
+    #colnames(df_results)<-c(paste0("Feature_1_",linkedDname),	paste0("Feature_2_",linkedDname),	paste0("Feature_",driverDname),	"pcor_coefficient",	"pcor_pvalue",	"cor_coefficient",	"cor_pvalue",	"cdgo_pvalue",	"cdgo2_pvalue")
     #Save results
-    suppressMessages(data.table::fwrite(df_results, paste(outputDir,"CoNIOutput.csv",sep=""),nThread=numCores))
+    suppressMessages(data.table::fwrite(df_results, paste(outputDir,outputName,".csv",sep=""),nThread=numCores))
 
     #Output processing time
     end_time <- Sys.time()
@@ -304,42 +415,38 @@ calculateLog2FoldChange<-function(matx){
   mat
 }
 
-RaReNI <- function(gene_exp, log2FCData,NormMetaboName="",
-                            padjustSmallDF=TRUE,
-                            correlateDFs=TRUE,
-                            splitAbundantDF=TRUE,
-                            split_number=10,
-                            split_number2=NULL,
-                            outputDir="./RaReNIResults/",
-                            iteration_start=1,
-                            wait_iteration=5,
-                            numCores=6) { #It could be something else
+#gene_exp = data1
+#log2FCData = data2
+RaReNI <- function(data1, data2,
+                   splitLog2FC=TRUE,
+                   split_number=2,
+                   outputDir="./RaReNIResults/",
+                   iteration_start=1,
+                   numCores=NULL,
+                   verbose=FALSE) { #It could be something else
+
 
   #Check if input objects are defined
-  do_objectsExist(gene_exp,norm_metabo_dat)
+  do_objectsExist(data1,data2,verbose)
 
   #Check if output directory exists
-  check_outputDir(outputDir)
+  check_outputDir(outputDir,verbose)
 
   #Start measuring time
   start_time <- Sys.time()
 
-  #Check if output directory exists
-  #check_outputDir(outputDir)
-
-  #Test if sample names are the same in both data sets
-  #compare_sampleNames(gene_exp,norm_metabo_dat)
+  log2FC_data2<-as.data.frame(calculateLog2FoldChange(data2))
 
   #Make sure column names are appropiate
-  colnames(gene_exp)<-make.names(colnames(gene_exp),unique=TRUE)
-  colnames(log2FCData)<-make.names(colnames(log2FCData),unique=TRUE)
+  colnames(data1)<-make.names(colnames(data1),unique=TRUE)
+  colnames(log2FC_data2)<-make.names(colnames(log2FC_data2),unique=TRUE)
 
   #Split Data Frame
-  if(splitAbundantDF){
+  if(splitLog2FC){
 
     #Split Log2FC data in parts
-    ls_dfs<-split_df(log2FCData,split_number,split_number2)
-    print(paste("Log2FC Data df will be split into",length(ls_dfs),"parts",sep=" "))
+    ls_dfs<-split_df(log2FC_data2,split_number)
+    print(paste("Log2FC Data will be split into",length(ls_dfs),"parts",sep=" "))
 
     #Loop Log2FC parts
     for (i in iteration_start:length(ls_dfs)){
@@ -347,20 +454,27 @@ RaReNI <- function(gene_exp, log2FCData,NormMetaboName="",
       print(paste('Running RaReNI Split Number',i,sep=" "))
 
       #Register parallel backend
-      library(doSNOW)
+      #library(doSNOW)
+      if(is.null(numCores)){
+        numCores<-detectCores()-2
+        if(verbose){cat("Running parallelization with ",numCores," cores\n",sep="")}
+      }else{
+        if(verbose){cat("Running parallelization with ",numCores," cores\n",sep="")}
+      }
+
+      #Register parallel backend
       cl<-makeCluster(numCores)
       registerDoSNOW(cl)
-      #registerDoParallel(numCores)
 
-      df_results = foreach(i = 1:ncol(df_iter), .export =c("gene_exp","df_iter","get_variableName"),.packages = c("ppcor", "doParallel","cocor") , .combine=rbind,.inorder = FALSE) %dopar% { #Loop log2FC data
-        results2 =foreach(j = 1:ncol(gene_exp),.packages = c("ppcor", "doParallel","cocor") , .combine=rbind,.verbose = FALSE,.inorder = FALSE) %dopar% { #Loop genes
+      df_results = foreach(i = 1:ncol(df_iter),.packages = c("ppcor", "doParallel","cocor") , .combine=rbind,.inorder = FALSE) %dopar% { #Loop log2FC data
+        results2 =foreach(j = 1:ncol(data1),.packages = c("ppcor", "doParallel","cocor") , .combine=rbind,.verbose = FALSE,.inorder = FALSE) %dopar% { #Loop genes
 
           #Get names
-          GeneName<-colnames(gene_exp)[j] #gene name
+          GeneName<-colnames(data1)[j] #gene name
           LFC2Name<-colnames(df_iter)[i] #log2Fold change between metabolite pair...
 
           #Vectors
-          geneVec<-gene_exp[,j]
+          geneVec<-data1[,j]
           LFCMetVec<-df_iter[,i]
 
           #Linear model
@@ -372,17 +486,17 @@ RaReNI <- function(gene_exp, log2FCData,NormMetaboName="",
           std.error <- modelCoeffs[get_variableName(geneVec), "Std. Error"]  # get std.error for speed
           t_value <- beta.estimate/std.error  # calc t statistic
           p_value <- modelCoeffs[get_variableName(geneVec), "Pr(>|t|)"] # calc p Value
-          p_adjust<-p.adjust(p_value)
+          #p_adjust<-p.adjust(p_value)
           f_statistic <- modelSummary$fstatistic[[1]]  # fstatistic
           f <- summary(lmIter)$fstatistic  # parameters for model p-value calc
           model_p <- pf(f[1], f[2], f[3], lower=FALSE)[[1]] #model p-value
-          model_p_adjust<-p.adjust(model_p)
+          #model_p_adjust<-p.adjust(model_p)
           rsquared <- summary(lmIter)$r.squared
           rsquare_adj <- summary(lmIter)$adj.r.squared
 
           rowtoprint<-list(LFC2Name,GeneName, #change to list instead of cbind.data.frame
-                           beta.estimate,std.error,t_value,p_value,p_adjust,
-                           f_statistic,model_p,model_p_adjust,rsquared,rsquare_adj)
+                           beta.estimate,std.error,t_value,p_value,
+                           f_statistic,model_p,rsquared,rsquare_adj)
         }
       }
 
@@ -488,64 +602,32 @@ do_objectsExist<-function(gene_exp,norm_metabo_dat,verb=verbose){
 #This function wills split the 'big' omics data into smaller data frames to improve computations, avoid run out of memory
 #The second option is probably better... need to review..
 #In the second otion the data is splitted according to the number given + 1 that are the remaining of the division (modulo)
-split_df<-function(AbundantDF,numberSplitDF=5,numberSplitDF_2=NULL){
+split_df<-function(AbundantDF,numberSplitDF_2=2){
   dt_list<-list()
-  if(is.null(numberSplitDF_2)){
-    if(ncol(AbundantDF) %% numberSplitDF !=0){
-      SplitFirstn<-floor(ncol(AbundantDF)/numberSplitDF)
-      remainingDF<-floor(ncol(AbundantDF)/numberSplitDF) + ncol(AbundantDF) %% numberSplitDF
-      for (i in 1:numberSplitDF){
-        if (i==1){
-          dt_list[[i]]<-AbundantDF[,1:SplitFirstn]
-        }else if (i<numberSplitDF){
-          start<-SplitFirstn*(i-1)+1
-          end<-SplitFirstn*i
-          dt_list[[i]]<-AbundantDF[,start:end]
-        }else{
-          start<-SplitFirstn*(numberSplitDF-1)+1
-          end<-length(AbundantDF)
-          dt_list[[i]]<-AbundantDF[,start:end]
-        }
-      }
-    }else{
-      Splitn<-ncol(AbundantDF)/numberSplitDF
-      for (i in 1:numberSplitDF){
-        if (i==1){
-          dt_list[[i]]<-AbundantDF[,1:Splitn]
-        }else{
-          start<-Splitn*(i-1)+1
-          end<-Splitn*i
-          dt_list[[i]]<-AbundantDF[,start:end]
-        }
-      }
+  if(ncol(AbundantDF) %% numberSplitDF_2 !=0){
+    SplitFirstParts<-floor(ncol(AbundantDF)/numberSplitDF_2)
+    start<-1 #Start to slice is position 1 of data frame
+    end<-SplitFirstParts #
+    i=1
+    while(end <= SplitFirstParts*numberSplitDF_2){
+      dt_list[[i]]<-AbundantDF[,start:end]
+      start<-start+SplitFirstParts
+      end<-start+SplitFirstParts-1
+      i<-i+1
     }
+    start<-SplitFirstParts*numberSplitDF_2+1
+    dt_list[[i]]<-AbundantDF[,start:ncol(AbundantDF),drop=FALSE] #Avoid losing column name when is a single column that is left
   }else{
-    if(ncol(AbundantDF) %% numberSplitDF_2 !=0){
-      SplitFirstParts<-floor(ncol(AbundantDF)/numberSplitDF_2)
-      start<-1 #Start to slice is position 1 of data frame
-      end<-SplitFirstParts #
-      i=1
-      while(end <= SplitFirstParts*numberSplitDF_2){
-        dt_list[[i]]<-AbundantDF[,start:end]
-        start<-start+SplitFirstParts
-        end<-start+SplitFirstParts-1
-        i<-i+1
-      }
-      start<-SplitFirstParts*numberSplitDF_2+1
-      dt_list[[i]]<-AbundantDF[,start:ncol(AbundantDF)]
-    }else{
-      split_size<-ncol(AbundantDF)/numberSplitDF_2
-      start<-1 #Start to slice is position 1 of data frame
-      end<-split_size
-      i=1
-      while(end <= ncol(AbundantDF)){
-        dt_list[[i]]<-AbundantDF[,start:end]
-        start<-start+split_size
-        end<-start+split_size-1
-        i<-i+1
-      }
+    split_size<-ncol(AbundantDF)/numberSplitDF_2
+    start<-1 #Start to slice is position 1 of data frame
+    end<-split_size
+    i=1
+    while(end <= ncol(AbundantDF)){
+      dt_list[[i]]<-AbundantDF[,start:end]
+      start<-start+split_size
+      end<-start+split_size-1
+      i<-i+1
     }
-
   }
   dt_list
 }
@@ -599,19 +681,19 @@ flattenCorrMatrix <- function(cormat, pmat) {
 
 #NewFunction more similar to CONI
 #Get significant correlations
-sig_correlation2<-function(input_data1,padj=TRUE, verb=verbose){
-  corr<-Hmisc::rcorr(as.matrix(input_data1),type='p')
+sig_correlation2<-function(input_driverD,padj=TRUE, verb=verbose){
+  corr<-Hmisc::rcorr(as.matrix(input_driverD),type='p')
   corr_table<-flattenCorrMatrix(corr$r,corr$P)
   corr_table$adj.p<-p.adjust(corr_table$p)
 
   if(padj){
     corr_tableSig <- corr_table %>% filter(adj.p<0.05)
     if(nrow(corr_tableSig) == 0){
-      print('No features significantly correlate after padjustment for data2')
+      print('No features significantly correlate after padjustment for linkedD')
       print('Using non adjusted pvalues')
       corr_tableSig<-corr_table %>% filter(p<0.05)}
   }else{
-    print("Ajustment for multiple testing was set to FALSE for correlations in data2")
+    print("Ajustment for multiple testing was set to FALSE for correlations in linked Data")
     corr_tableSig<-corr_table %>% filter(p<0.05)
   }
   if(verb){print(paste('Significant correlations',nrow(corr_tableSig),sep=" "))}
@@ -646,7 +728,7 @@ sig_correlation2Dfs<-function(metabolite_data,gene_expression){
                    cor=double(),
                    pvalue=double(),
                    stringsAsFactors=FALSE)
-
+#This part might be too slow... there are probably more efficient ways
   for(i in rows){
     for(j in cols){
       if (pvalueMatrix[i,j]>0.05){
@@ -675,13 +757,12 @@ get_lowvarFeatures<-function(df){
 }
 
 
-#This function reads the output files generated by CoNIParallel
-#The folder should not contain any other files except CoNI output
+#This function reads the output split files generated by CoNI and generates a single result object
 merge_outpuSplitFiles<-function(outputDir){
   #outputDir<-gsub('\\.','',outputDir)
   #outputDir<-gsub('\\/','',outputDir)
   file_list <- list.files(outputDir)
-  file_list<-file_list[grep("CoNI",file_list)]
+  file_list<-file_list[grep("CoNIOutputSplit",file_list)]
   for (file in file_list){
     # if the merged dataset doesn't exist, create it
     if (!exists("datasetResultsCoNI")){
@@ -710,7 +791,7 @@ check_outputDir<-function(outputDir,verb=verbose){
 #Expression table contains in one column the genes and a second column that specifies if the gene is a low expressed gene = LowExpression
 #or not = ""
 expression_level<-function(CoNI_results, expressionTable){
-  expressionLevel<-expressionLevelTable[match(CoNI_results$Feature_data1,expressionTable$Gene),"ExpressionLevel"]
+  expressionLevel<-expressionLevelTable[match(CoNI_results$Feature_driverD,expressionTable$Gene),"ExpressionLevel"]
   expressionLevel
 }
 
@@ -721,8 +802,8 @@ generate_network<-function(ResultsCoNI, colorNodesTable){
 
   #Summarize results for network construction
   df <- plyr::ddply(results_SteigerAdjust,c(1,2),plyr::summarize,
-              Genes=length(Feature_data1),
-              GenesString=paste0(unique(Feature_data1),collapse=";"))
+              Genes=length(Feature_driverD),
+              GenesString=paste0(unique(Feature_driverD),collapse=";"))
   colnames(df) <- c("from","to","weight","Genes")
   clinksd <- df
   clinksd$type <- "hyperlink"
@@ -752,8 +833,8 @@ generate_network_2<-function(ResultsCoNI, colorNodesTable,outputDir="./",outputF
   results_SteigerAdjust <- ResultsCoNI[,c(1:7)] #Get pair metabolites, gene and pcor and cor information... change to add more information
   #Summarize results for network construction
   df<-plyr::ddply(results_SteigerAdjust,c(1,2),plyr::summarize,
-            weightreal=length(Feature_data1),
-            Genes=paste0(unique(Feature_data1),collapse=";"),
+            weightreal=length(Feature_driverD),
+            Genes=paste0(unique(Feature_driverD),collapse=";"),
             #ActualGeneNames=paste0(unique(ActualGeneName),collapse=";"),
             PcorValues=paste0(pcor_coefficient,collapse=";"),
             CorValues=paste0(cor_coefficient,collapse=";"),
@@ -784,7 +865,7 @@ generate_network_2<-function(ResultsCoNI, colorNodesTable,outputDir="./",outputF
 
 #Find local regulated genes
 find_localRegulatedFeatures<-function(ResultsCoNI,network){
-  ls2 <- length(unique(ResultsCoNI$Feature_data1)) #get number of genes affecting metabolites
+  ls2 <- length(unique(ResultsCoNI$Feature_driverD)) #get number of genes affecting metabolites
   #Distance = 2 -> Second level neighborhood?
   df <- list()
 
@@ -795,13 +876,13 @@ find_localRegulatedFeatures<-function(ResultsCoNI,network){
       l1[[j]] <- igraph::V(network)$name[neighbors(network, j)]#Loop neighbors of the node in the iteration and get their neighbors (Second level neighborhood)
     }
     l1 <- unique(unlist(l1)) #Get unique 2nd level neighbors
-    s <- subset(ResultsCoNI, ((Feature_1_data2==i & Feature_2_data2 %in% l) | (Feature_2_data2==i & Feature_1_data2 %in% l)) |
-                  ((Feature_1_data2 %in% l & Feature_2_data2 %in% l1) | (Feature_2_data2 %in% l & Feature_1_data2 %in% l1)))
-    a <- length(unique(paste0(s$Feature_1_data2,"_",s$Feature_2_data2)))
-    d <- length(unique(s$Feature_data1))
+    s <- subset(ResultsCoNI, ((Feature_1_linkedD==i & Feature_2_linkedD %in% l) | (Feature_2_linkedD==i & Feature_1_linkedD %in% l)) |
+                  ((Feature_1_linkedD %in% l & Feature_2_linkedD %in% l1) | (Feature_2_linkedD %in% l & Feature_1_linkedD %in% l1)))
+    a <- length(unique(paste0(s$Feature_1_linkedD,"_",s$Feature_2_linkedD)))
+    d <- length(unique(s$Feature_driverD))
     e <- nrow(s)
     s <- droplevels(s)
-    b <- table(s$Feature_data1)
+    b <- table(s$Feature_driverD)
     df[[i]] <- data.frame("Node1"=rep(i,length(b)),"Edges"=rep(a,length(b)),"Draws"=rep(e,length(b)),"GenesInTotal"=rep(d,length(b)),as.data.frame(b))
   }
   #Generate result data frame
@@ -819,22 +900,126 @@ find_localRegulatedFeatures<-function(ResultsCoNI,network){
 }
 
 tableLRGs_Metabolites<-function(CoNIResults,LRGenes){
-  CoNIResults_LRGs<-CoNIResults[CoNIResults$Feature_data1 %in% LRGenes,]
-  Gene_TableLRGs<- plyr::ddply(CoNIResults_LRGs, .(Feature_1_data2,Feature_2_data2), plyr::summarize,
-                         Genes=paste(Feature_data1,collapse=","))
+  CoNIResults_LRGs<-CoNIResults[CoNIResults$Feature_driverD %in% LRGenes,]
+  Gene_TableLRGs<- plyr::ddply(CoNIResults_LRGs, .(Feature_1_linkedD,Feature_2_linkedD), plyr::summarize,
+                         Genes=paste(Feature_driverD,collapse=","))
   #Join Metabolite pairs
-  CoNIResults_LRGs_MetaboliteJoined<-unite(CoNIResults_LRGs,MetabolitePair,Feature_1_data2,Feature_2_data2,sep="-")
+  CoNIResults_LRGs_MetaboliteJoined<-unite(CoNIResults_LRGs,MetabolitePair,Feature_1_linkedD,Feature_2_linkedD,sep="-")
   CoNIResults_LRGs_MetaboliteJoined<-CoNIResults_LRGs_MetaboliteJoined[,c(1,2)]
 
   #Chowate table Genes and their corresponding Metabolite pairs
-  LRGs_and_MPairs <- plyr::ddply(CoNIResults_LRGs_MetaboliteJoined, .(Feature_data1), plyr::summarize,
+  LRGs_and_MPairs <- plyr::ddply(CoNIResults_LRGs_MetaboliteJoined, .(Feature_driverD), plyr::summarize,
                            MetabolitePairs=paste(MetabolitePair,collapse=","))
   #Temporary table
   temp<-as.data.frame(CoNIResults_LRGs[,c(1:3)])
 
   #Add to the LRGs and Metabolites pairs the unique individual metabolites
-  LRGs_and_MPairs$Metabolites<-ddply(temp, .(Feature_data1), plyr::summarize,
-                                     Metabolites=paste(unique(c(as.character(Feature_1_data2),as.character(Feature_2_data2))),collapse=","))[,2]
+  LRGs_and_MPairs$Metabolites<-ddply(temp, .(Feature_driverD), plyr::summarize,
+                                     Metabolites=paste(unique(c(as.character(Feature_1_linkedD),as.character(Feature_2_linkedD))),collapse=","))[,2]
   colnames(LRGs_and_MPairs)<-c("Local Regulated Gene","Metabolite pairs","Metabolites")
   LRGs_and_MPairs
 }
+
+
+################################################
+#New Steiger approach???
+cocor.dep.groups.overlap_inHouse<-function(r.jk,r.jk_h, r.kh_j, n, alternative = "two.sided",alpha = 0.05, conf.level = 0.95, data.name = NULL,var.labels = NULL,return.htest = FALSE){
+
+  #Validate that the input is correct
+  for (x in c("r.jk", "r.jk_h","r.kh_j")) {
+    val_num_range(get(x),x,-1,1)
+  }
+
+  val_pos_integer(n,get_variableName(n))
+
+  for (x in c("alpha", "conf.level")) {
+    val_num_range(get(x), x, 0, 1)
+  }
+
+  alternative <- val_alternative(alternative)
+
+  if(!is.null(var.labels)){
+    val_character(var.labels,get_variableName(var.labels))
+  }
+
+  distribution <- "z"
+
+  #Option 1
+  r.p <- (r.jk_h + r.jk + r.kh_j)/3
+  covariance.enum_pcor <- r.kh_j * (1 - 2 * r.p^2) - 0.5 * r.p^2 * (1 - 2 * r.p^2 - r.kh_j^2)
+  covariance.denom_pcor <- (1 - r.p^2)^2
+  covariance_pcor <- covariance.enum_pcor/covariance.denom_pcor
+  z.enum <- sqrt(n - 3) * (fisher.r2z(r.jk) - fisher.r2z(r.jk_h))
+  z.denom <- sqrt(2 - 2 * covariance_pcor)
+  statistic <- z.enum/z.denom
+  p.value <- get.p.value(statistic, distribution, alternative)
+
+  result <- list(distribution = distribution, statistic = statistic, p.value = p.value)
+  result
+}
+
+val_num_range<-function (x, name,lower,upper)
+{
+  if (any(is.na(x)))
+    stop(paste("The parameter '", name, "' is NA", sep = ""))
+  if (any(is.infinite(x)))
+    stop(paste("The parameter '", name, "' must be finite",
+               sep = ""))
+  if (!is(x, "numeric") || length(x) != 1)
+    stop(paste("The parameter '", name, "' must be a single number",
+               sep = ""))
+  if (x < lower || x > upper)
+    stop(paste("The parameter '", name, "' must be a single number between ",
+               lower, " and ", upper, sep = ""))
+}
+
+
+val_pos_integer<-function(x,name){
+  res<-all.equal(x, as.integer(x))
+  if(!is.logical(res))
+    stop(paste("The parameter '", name, "' must be an integer", sep = ""))
+  if(x<0)
+    stop(paste("The parameter '", name, "' must be positive", sep = ""))
+}
+
+
+val_alternative<-function(alternative){
+  if(alternative=="two.sided" || alternative=="greater" || alternative=="less" || alternative=="t" || alternative=="g" || alternative=="l"){
+    switch(substr(alternative, 1, 1), t = "two.sided", g = "greater", l = "less")
+  }else{
+    stop("The parameter 'alternative' must be either 'two.sided', 'greater', or 'less' (or just the initial letter).")
+  }
+}
+
+
+val_character<-function(x_vect,name){
+  if(any(is.na(x_vect))){
+    stop(paste("The parameter '", name, "' is NA", sep = ""))
+  }
+  if (!is(x_vect, "character") || !(length(x_vect)==3)){
+    stop(paste("The parameter '", name, "' must be a vector of 3 character strings"))
+  }
+}
+
+fisher.r2z<-function (r){
+  0.5 * (log(1 + r) - log(1 - r))
+}
+
+get.p.value<-function (statistic, distribution = "z", alternative = "two.sided",df = NULL){
+  if (alternative == "two.sided"){
+    statistic <- abs(statistic)
+  }
+
+  dist.fun <- paste("p", switch(distribution, z = "norm",
+                                t = "t"), sep = "")
+  params <- list(statistic)
+  if (!is.null(df)){
+    params <- c(params, df)
+  }
+  x <- do.call(dist.fun, params)
+  switch(alternative, two.sided = 2 * (1 - x), greater = 1 -x, less = x)
+}
+
+
+
+

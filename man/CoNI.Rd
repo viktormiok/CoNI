@@ -8,24 +8,24 @@
 %%  ~~ A concise (1-5 lines) description of what the function does. ~~
 }
 \usage{
-CoNI(data1,data2,data2Name="data2",padjustdata2=TRUE,
-      correlateDFs=TRUE,splitData1=TRUE,split_number=2,outputDir="./OutputDir/")
+CoNI(driverD,linkedD,linkedDName="linkedD",padjustlinkedD=TRUE,
+      correlateDFs=TRUE,splitdriverD=TRUE,split_number=2,outputDir="./OutputDir/")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{data1}{Object to use as first data input.
+  \item{driverD}{Object to use as first data input.
 }
-  \item{data2}{Object to use as second data input.
+  \item{linkedD}{Object to use as second data input.
 }
-  \item{data2Name}{File name to save significant correlation results of object data2. This file will be read if function is called again with the same file names.
+  \item{linkedDName}{File name to save significant correlation results of object linkedD. This file will be read if function is called again with the same file names.
 }
-  \item{padjustdata2}{logical. If TRUE adjusted p-values will be used to filter second data input.
+  \item{padjustlinkedD}{logical. If TRUE adjusted p-values will be used to filter second data input.
 }
-  \item{correlateDFs}{logical. If TRUE the elements that significantly correlate of data2 will be correlated with the elements of data1. Only the elements that significantly correlate are kept.
+  \item{correlateDFs}{logical. If TRUE the elements that significantly correlate of linkedD will be correlated with the elements of driverD. Only the elements that significantly correlate are kept.
 }
-  \item{splitData1}{logical. If TRUE data1 (tipically the largest data input) will be split into n subsets for the computation. Keep as TRUE unless data input is small (FALSE option under construction).
+  \item{splitdriverD}{logical. If TRUE driverD (tipically the largest data input) will be split into n subsets for the computation. Keep as TRUE unless data input is small (FALSE option under construction).
 }
-  \item{split_number}{Number of parts to split the elements of data1.
+  \item{split_number}{Number of parts to split the elements of driverD.
 }
   \item{outputDir}{Output Directory where (split) results files are stored.
 }
@@ -77,8 +77,8 @@ rownames(hfd_metabo)<-rownames(hfd_gene)
 
 #Run CoNI
 CoNIResults <- CoNI(hfd_gene,hfd_metabo,
-                    data1name="HFD_genes",data2name = "HFD_metabolites",
-                    padjustData2 = FALSE,
+                    driverDname="HFD_genes",linkedDname = "HFD_metabolites",
+                    padjustlinkedD = FALSE,
                     split_number = 2)
 
 }

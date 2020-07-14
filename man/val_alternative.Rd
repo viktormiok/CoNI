@@ -1,14 +1,14 @@
-\name{merge_outpuSplitFiles}
-\alias{merge_outpuSplitFiles}
+\name{val_alternative}
+\alias{val_alternative}
 %- Also NEED an '\alias' for EACH other topic documented here.
-\title{merge_outpuSplitFiles
+\title{val_alternative
 %%  ~~function to do ... ~~
 }
 \description{
 %%  ~~ A concise (1-5 lines) description of what the function does. ~~
 }
 \usage{
-merge_outpuSplitFiles(x)
+val_alternative(x)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -52,6 +52,11 @@ function (x)
   }
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }% use one of  RShowDoc("KEYWORDS")
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+% R documentation directory (show via RShowDoc("KEYWORDS")):
+% \keyword{ ~kwd1 }
+% \keyword{ ~kwd2 }
+% Use only one keyword per line.
+% For non-standard keywords, use \concept instead of \keyword:
+% \concept{ ~cpt1 }
+% \concept{ ~cpt2 }
+% Use only one concept per line.
