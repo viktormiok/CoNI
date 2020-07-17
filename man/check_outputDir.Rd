@@ -4,8 +4,7 @@
 \title{check_outputDir
 %%  ~~function to do ... ~~
 }
-\description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
+\description{Checks if if the Output directory exists. If it does not exist it creates it.
 }
 \usage{
 check_outputDir(x)

@@ -2,10 +2,11 @@ Package: CoNI
 Type: Package
 Title: Correlation guided Network Integration (CoNI)
 Version: 0.1.0
-Author: José Manuel Monroy Kuhn
+Date: 15.07.2020
+Author: José Manuel Monroy Kuhn, Valentina Klaus
 Maintainer: José Manuel Monroy Kuhn <nolozz@gmail.com>
-Description: CoNI integrates data from two different sources using partial correlations.
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Description: CoNI integrates data from two different sources using partial correlations. Data must originate from the same samples
+License: GPL-3
 Encoding: UTF-8
 LazyData: true
+Depends: igraph

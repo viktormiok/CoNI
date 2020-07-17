@@ -4,7 +4,7 @@
 ####################################
 #Functions
 ####################################
-CoNI<- function(driverD, linkedD,outputName="CoNIOutput",driverDname="driverD",linkedDname="linkedD",padjustlinkedD=TRUE, correlateDFs=TRUE,splitdriverD=TRUE,split_number=2,outputDir="./CoNIOutput/",delPrevious=TRUE,delIntermediaryFiles=TRUE,iteration_start=1,wait_iteration=0,numCores=NULL,verbose=TRUE,inhouseSteigerPcor=FALSE) {
+CoNI<- function(driverD, linkedD,outputName="CoNIOutput",driverDname="driverD",linkedDname="linkedD",padjustlinkedD=TRUE, correlateDFs=TRUE,splitdriverD=TRUE,split_number=2,outputDir="./CoNIOutput/",delPrevious=FALSE,delIntermediaryFiles=TRUE,iteration_start=1,numCores=NULL,verbose=TRUE,inhouseSteigerPcor=FALSE) {
 
   #Check if input objects are defined
   do_objectsExist(driverD,linkedD,verbose)
@@ -64,8 +64,13 @@ CoNI<- function(driverD, linkedD,outputName="CoNIOutput",driverDname="driverD",l
   }
 
   if(ncol(driverD)*nrow(normMetabo_Tablesignificant)>10000){
-    cat('Too many combinations, split will be performed')
-    splitdriverD<-TRUE
+    if(splitdriverD==FALSE){
+      cat('For computational purposes a split will be performed\n')
+      splitdriverD<-TRUE
+    }else if(ncol(driverD)/10 > split_number){
+      cat('Provided split number is too small, split number was adjusted')
+      split_number<-ncol(driverD)/10
+    }
   }
 
   #Split Data Frame
@@ -77,12 +82,12 @@ CoNI<- function(driverD, linkedD,outputName="CoNIOutput",driverDname="driverD",l
     for (i in iteration_start:length(ls_dfs)){
       df_iter<-ls_dfs[[i]]
 
-      #Wait 30 seconds to avoid overheating and errors in the parallelization...
-      #If usign macs fan control, less pauses can be made...
-      #if(i%%10==0){ #Every ten iterations, a pause will be made
-      #  Sys.sleep(30)
-      #}
-      Sys.sleep(wait_iteration)
+      # #Wait 30 seconds to avoid overheating and errors in the parallelization...
+      # #If usign macs fan control, less pauses can be made...
+      # #if(i%%10==0){ #Every ten iterations, a pause will be made
+      # #  Sys.sleep(30)
+      # #}
+      # Sys.sleep(wait_iteration)
 
 
       #Convert to data.frames
@@ -105,7 +110,8 @@ CoNI<- function(driverD, linkedD,outputName="CoNIOutput",driverDname="driverD",l
       registerDoSNOW(cl)
       #registerDoParallel(numCores)
 
-      df_results = foreach(j = 1:ncol(df_iter), .packages = c("ppcor", "doParallel","cocor") , .combine=rbind,.inorder = FALSE) %dopar% { #Loop table significant metabolites %dopar%
+      pb<-tkProgressBar(max=ncol(driverD))
+      df_results = foreach(j = 1:ncol(df_iter), .packages = c("ppcor", "doParallel","cocor","progress") , .combine=rbind,.inorder = FALSE,.options.snow=taskBar1(pb,ncol(driverD))) %dopar% { #Loop table significant metabolites %dopar%
         results2 =foreach(i = 1:nrow(normMetabo_Tablesignificant),.packages = c("ppcor", "doParallel","cocor") , .combine=rbind,.verbose = FALSE,.inorder = FALSE) %dopar% { #Loop genes
           index1<-normMetabo_Tablesignificant[i,6]#Index column of first metabolite
           index2<-normMetabo_Tablesignificant[i,7]#Index column of second metabolite
@@ -123,7 +129,7 @@ CoNI<- function(driverD, linkedD,outputName="CoNIOutput",driverDname="driverD",l
           #Calculate partial correlation between metabolites partialing out gene
           #j=metabolite1,k=metabolite2,h=gene
           #r.jk_h
-          if(inhouseSteigerPcor){#Not functional modify...
+          if(inhouseSteigerPcor){#
 
             #Part of original output
             pcor_result<-pcor.test(linkedD[,index1],linkedD[,index2],df_iter[,j],method="p")
@@ -246,10 +252,9 @@ CoNI<- function(driverD, linkedD,outputName="CoNIOutput",driverDname="driverD",l
           }
           #############################
 
-
-
         }
       }
+      close(pb)
       stopCluster(cl)
 
       #Get rid of rows with only NAs --> Not working...
@@ -385,6 +390,13 @@ CoNI<- function(driverD, linkedD,outputName="CoNIOutput",driverDname="driverD",l
     return(df_results)
   }
 
+}
+
+
+taskBar1<-function(pb,ntasks){
+  progress<-function(n) setTkProgressBar(pb,n, label=paste(round(n/ntasks*100,0), "%"))
+  opts<-list(progress=progress)
+  return(opts)
 }
 
 #################
@@ -543,6 +555,7 @@ writeTable <- function(results_write,num_cores,outputDir,iteration) {
 }
 
 #This function checks previous files and deletes according to the User input option
+#under construction... modify...
 check_previous<-function(del,iteration,outDir,verb=verbose){
   if(del){
     filesDel<-list.files(outDir,pattern = "CoNIOutput")
@@ -554,6 +567,7 @@ check_previous<-function(del,iteration,outDir,verb=verbose){
       sapply(filesDel2, function(f){file.remove(paste0(outDir,f))})
     }
   }else if(iteration>1){
+    #check if there are files... If there are none... Stop
     if(verb){
       cat("Previous files are present\n")
       cat("Starting from iteration ",iteration,"\n",sep="")
@@ -830,7 +844,7 @@ get_variableName <- function(variable) {
 
 
 generate_network_2<-function(ResultsCoNI, colorNodesTable,outputDir="./",outputFileName="ResultsCoNI"){
-  results_SteigerAdjust <- ResultsCoNI[,c(1:7)] #Get pair metabolites, gene and pcor and cor information... change to add more information
+  results_SteigerAdjust <- ResultsCoNI[,c(1:7,10:11)] #Get pair metabolites, gene and pcor and cor information... change to add more information
   #Summarize results for network construction
   df<-plyr::ddply(results_SteigerAdjust,c(1,2),plyr::summarize,
             weightreal=length(Feature_driverD),
@@ -840,6 +854,8 @@ generate_network_2<-function(ResultsCoNI, colorNodesTable,outputDir="./",outputF
             CorValues=paste0(cor_coefficient,collapse=";"),
             PcorAverage=mean(pcor_coefficient),
             CorAverage=mean(cor_coefficient),
+            PcorLink1Driver=paste0(Pcor_M1G_M2,collapse=";"),
+            PcorLink2Driver=paste0(Pcor_M2G_M1,collapse=";"),
             DirectionPcor=ifelse(sum(pcor_coefficient<0)>sum(pcor_coefficient>0),'Negative',ifelse(sum(pcor_coefficient<0) == sum(pcor_coefficient>0),'Balanced','Positive')))
   colnames(df)[1:2] <- c("from","to")
   clinksd <- df
@@ -899,127 +915,23 @@ find_localRegulatedFeatures<-function(ResultsCoNI,network){
   #res2Sig <- subset(res2,res2$Pval<0.05)
 }
 
-tableLRGs_Metabolites<-function(CoNIResults,LRGenes){
-  CoNIResults_LRGs<-CoNIResults[CoNIResults$Feature_driverD %in% LRGenes,]
-  Gene_TableLRGs<- plyr::ddply(CoNIResults_LRGs, .(Feature_1_linkedD,Feature_2_linkedD), plyr::summarize,
+tableLRDFs_LFs<-function(CoNIResults,LRDFs){
+  CoNIResults_LRDFs<-CoNIResults[CoNIResults$Feature_driverD %in% LRDFs,]
+  Gene_TableLRDFs<- plyr::ddply(CoNIResults_LRDFs, plyr::.(Feature_1_linkedD,Feature_2_linkedD), plyr::summarize,
                          Genes=paste(Feature_driverD,collapse=","))
   #Join Metabolite pairs
-  CoNIResults_LRGs_MetaboliteJoined<-unite(CoNIResults_LRGs,MetabolitePair,Feature_1_linkedD,Feature_2_linkedD,sep="-")
-  CoNIResults_LRGs_MetaboliteJoined<-CoNIResults_LRGs_MetaboliteJoined[,c(1,2)]
+  CoNIResults_LRDFs_MetaboliteJoined<-tidyr::unite(CoNIResults_LRDFs,MetabolitePair,Feature_1_linkedD,Feature_2_linkedD,sep="-")
+  CoNIResults_LRDFs_MetaboliteJoined<-CoNIResults_LRDFs_MetaboliteJoined[,c(1,2)]
 
   #Chowate table Genes and their corresponding Metabolite pairs
-  LRGs_and_MPairs <- plyr::ddply(CoNIResults_LRGs_MetaboliteJoined, .(Feature_driverD), plyr::summarize,
+  LRDFs_and_MPairs <- plyr::ddply(CoNIResults_LRDFs_MetaboliteJoined, plyr::.(Feature_driverD), plyr::summarize,
                            MetabolitePairs=paste(MetabolitePair,collapse=","))
   #Temporary table
-  temp<-as.data.frame(CoNIResults_LRGs[,c(1:3)])
+  temp<-as.data.frame(CoNIResults_LRDFs[,c(1:3)])
 
-  #Add to the LRGs and Metabolites pairs the unique individual metabolites
-  LRGs_and_MPairs$Metabolites<-ddply(temp, .(Feature_driverD), plyr::summarize,
+  #Add to the LRDFs and Metabolites pairs the unique individual metabolites
+  LRDFs_and_MPairs$Metabolites<-plyr::ddply(temp, plyr::.(Feature_driverD), plyr::summarize,
                                      Metabolites=paste(unique(c(as.character(Feature_1_linkedD),as.character(Feature_2_linkedD))),collapse=","))[,2]
-  colnames(LRGs_and_MPairs)<-c("Local Regulated Gene","Metabolite pairs","Metabolites")
-  LRGs_and_MPairs
+  colnames(LRDFs_and_MPairs)<-c("Local Regulated Driver Feature","Linked Feature pairs","Linked Features")
+  LRDFs_and_MPairs
 }
-
-
-################################################
-#New Steiger approach???
-cocor.dep.groups.overlap_inHouse<-function(r.jk,r.jk_h, r.kh_j, n, alternative = "two.sided",alpha = 0.05, conf.level = 0.95, data.name = NULL,var.labels = NULL,return.htest = FALSE){
-
-  #Validate that the input is correct
-  for (x in c("r.jk", "r.jk_h","r.kh_j")) {
-    val_num_range(get(x),x,-1,1)
-  }
-
-  val_pos_integer(n,get_variableName(n))
-
-  for (x in c("alpha", "conf.level")) {
-    val_num_range(get(x), x, 0, 1)
-  }
-
-  alternative <- val_alternative(alternative)
-
-  if(!is.null(var.labels)){
-    val_character(var.labels,get_variableName(var.labels))
-  }
-
-  distribution <- "z"
-
-  #Option 1
-  r.p <- (r.jk_h + r.jk + r.kh_j)/3
-  covariance.enum_pcor <- r.kh_j * (1 - 2 * r.p^2) - 0.5 * r.p^2 * (1 - 2 * r.p^2 - r.kh_j^2)
-  covariance.denom_pcor <- (1 - r.p^2)^2
-  covariance_pcor <- covariance.enum_pcor/covariance.denom_pcor
-  z.enum <- sqrt(n - 3) * (fisher.r2z(r.jk) - fisher.r2z(r.jk_h))
-  z.denom <- sqrt(2 - 2 * covariance_pcor)
-  statistic <- z.enum/z.denom
-  p.value <- get.p.value(statistic, distribution, alternative)
-
-  result <- list(distribution = distribution, statistic = statistic, p.value = p.value)
-  result
-}
-
-val_num_range<-function (x, name,lower,upper)
-{
-  if (any(is.na(x)))
-    stop(paste("The parameter '", name, "' is NA", sep = ""))
-  if (any(is.infinite(x)))
-    stop(paste("The parameter '", name, "' must be finite",
-               sep = ""))
-  if (!is(x, "numeric") || length(x) != 1)
-    stop(paste("The parameter '", name, "' must be a single number",
-               sep = ""))
-  if (x < lower || x > upper)
-    stop(paste("The parameter '", name, "' must be a single number between ",
-               lower, " and ", upper, sep = ""))
-}
-
-
-val_pos_integer<-function(x,name){
-  res<-all.equal(x, as.integer(x))
-  if(!is.logical(res))
-    stop(paste("The parameter '", name, "' must be an integer", sep = ""))
-  if(x<0)
-    stop(paste("The parameter '", name, "' must be positive", sep = ""))
-}
-
-
-val_alternative<-function(alternative){
-  if(alternative=="two.sided" || alternative=="greater" || alternative=="less" || alternative=="t" || alternative=="g" || alternative=="l"){
-    switch(substr(alternative, 1, 1), t = "two.sided", g = "greater", l = "less")
-  }else{
-    stop("The parameter 'alternative' must be either 'two.sided', 'greater', or 'less' (or just the initial letter).")
-  }
-}
-
-
-val_character<-function(x_vect,name){
-  if(any(is.na(x_vect))){
-    stop(paste("The parameter '", name, "' is NA", sep = ""))
-  }
-  if (!is(x_vect, "character") || !(length(x_vect)==3)){
-    stop(paste("The parameter '", name, "' must be a vector of 3 character strings"))
-  }
-}
-
-fisher.r2z<-function (r){
-  0.5 * (log(1 + r) - log(1 - r))
-}
-
-get.p.value<-function (statistic, distribution = "z", alternative = "two.sided",df = NULL){
-  if (alternative == "two.sided"){
-    statistic <- abs(statistic)
-  }
-
-  dist.fun <- paste("p", switch(distribution, z = "norm",
-                                t = "t"), sep = "")
-  params <- list(statistic)
-  if (!is.null(df)){
-    params <- c(params, df)
-  }
-  x <- do.call(dist.fun, params)
-  switch(alternative, two.sided = 2 * (1 - x), greater = 1 -x, less = x)
-}
-
-
-
-
