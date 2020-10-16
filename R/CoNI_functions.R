@@ -28,7 +28,7 @@ CoNI<- function(driverD, linkedD,outputName="CoNIOutput",driverDname="driverD",l
   if(!file.exists(paste(outputDir,"KeptFeatures_",linkedDname,".csv",sep=""))){
     #Get significant correlations between metabolites
     if(verbose){print("Calculating correlations of linked Data")}
-    normMetabo_Tablesignificant<-sig_correlation2(linkedD,padjustlinkedD,verbose)
+    normMetabo_Tablesignificant<-sig_correlation2(input_driverD = linkedD,padj = padjustlinkedD,verb = verbose)
     #Get indexes for the rows and columns for the metabo data
     normMetabo_Tablesignificant$RowIndex<-apply(normMetabo_Tablesignificant,1,function(x){return(which(colnames(linkedD)[1:ncol(linkedD)]==x[1]))})
     normMetabo_Tablesignificant$ColIndex<-apply(normMetabo_Tablesignificant,1,function(x){return(which(colnames(linkedD)[1:ncol(linkedD)]==x[2]))})
@@ -67,10 +67,10 @@ CoNI<- function(driverD, linkedD,outputName="CoNIOutput",driverDname="driverD",l
     if(splitdriverD==FALSE){
       cat('For computational purposes a split will be performed\n')
       splitdriverD<-TRUE
-    }else if(ncol(driverD)/10 > split_number){
-      cat('Provided split number is too small, split number was adjusted')
-      split_number<-ncol(driverD)/10
-    }
+    # }else if(ncol(driverD)/10 > split_number){
+    #   cat('Provided split number is too small, split number was adjusted')
+    #   split_number<-ncol(driverD)/10
+     }
   }
 
   #Split Data Frame
@@ -253,6 +253,7 @@ CoNI<- function(driverD, linkedD,outputName="CoNIOutput",driverDname="driverD",l
           #############################
 
         }
+
       }
       close(pb)
       stopCluster(cl)
@@ -695,10 +696,10 @@ flattenCorrMatrix <- function(cormat, pmat) {
 
 #NewFunction more similar to CONI
 #Get significant correlations
-sig_correlation2<-function(input_driverD,padj=TRUE, verb=verbose){
+sig_correlation2<-function(input_driverD,padj=TRUE,method="BH", verb=verbose){
   corr<-Hmisc::rcorr(as.matrix(input_driverD),type='p')
   corr_table<-flattenCorrMatrix(corr$r,corr$P)
-  corr_table$adj.p<-p.adjust(corr_table$p)
+  corr_table$adj.p<-p.adjust(corr_table$p,method = method)
 
   if(padj){
     corr_tableSig <- corr_table %>% filter(adj.p<0.05)
@@ -750,7 +751,7 @@ sig_correlation2Dfs<-function(metabolite_data,gene_expression){
       }else{
         cor<-rcoeffMatrix[i,j]
         pvalue<-pvalueMatrix[i,j]
-        df<- df %>% add_row(metabolite = i, gene = j, cor = cor, pvalue = pvalue)
+        df<- df %>% add_row(metabolite = i, gene = j, cor = cor, pvalue = pvalue) #This part might be inefficient and slow
       }
 
     }
@@ -854,8 +855,8 @@ generate_network_2<-function(ResultsCoNI, colorNodesTable,outputDir="./",outputF
             CorValues=paste0(cor_coefficient,collapse=";"),
             PcorAverage=mean(pcor_coefficient),
             CorAverage=mean(cor_coefficient),
-            PcorLink1Driver=paste0(Pcor_M1G_M2,collapse=";"),
-            PcorLink2Driver=paste0(Pcor_M2G_M1,collapse=";"),
+            # PcorLink1Driver=paste0(Pcor_M1G_M2,collapse=";"),
+            # PcorLink2Driver=paste0(Pcor_M2G_M1,collapse=";"),
             DirectionPcor=ifelse(sum(pcor_coefficient<0)>sum(pcor_coefficient>0),'Negative',ifelse(sum(pcor_coefficient<0) == sum(pcor_coefficient>0),'Balanced','Positive')))
   colnames(df)[1:2] <- c("from","to")
   clinksd <- df
