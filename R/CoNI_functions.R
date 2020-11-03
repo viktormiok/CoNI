@@ -394,148 +394,83 @@ CoNI<- function(driverD, linkedD,outputName="CoNIOutput",driverDname="driverD",l
 }
 
 
+#Add robustness function
+#This function takes as input the corresponding linked Data and driver Data. Sample names
+#for both datasets should match (samples are in the rows). User has to provide the number of samples that
+#will be excluded. Function will iteratively extract all combinations for the number provided.
+#Default value is 2. For very big datasets might fail.
+all_combinationsCoNI<-function(linkedD,driverD,no_samplesOut=2,driverDname="driverD",linkedDname="linkedD",outputName="CoNIOutput",outputDir="./CoNIOutput",padjustlinkedD=TRUE,correlateDFs=TRUE,splitdriverD=TRUE,split_number=2,delPrevious=FALSE,delIntermediaryFiles=TRUE,inhouseSteigerPcor=TRUE){
+  #Get all possible combinations
+  combinations<-combn(c(1:nrow(linkedD)),no_samplesOut)
+
+  for(i in 1:ncol(combinations)){
+    #Get index of pair to exclude
+    index<-combinations[,i]
+
+    #Remove selected rows from linked data
+    lData<-linkedD[-index,]
+    lData <- as.data.frame(lData)
+
+    #Remove selected rows from drive data
+    dData<-driverD[-index,]
+
+    #Test if sample names are the same in both data sets
+    compare_sampleNames(dData,lData)
+
+
+    CoNIResults_Chow<-CoNI(driverD = dData,linkedD = lData,
+                           driverDname=paste0(driverDname,paste(combinations[,i],collapse = 'and',sep="")),
+                           linkedDname = paste0(linkedDname,paste(combinations[,i],collapse = 'and',sep="")),
+                           padjustlinkedD = padjustlinkedD, split_number = split_number,
+                           correlateDFs=correlateDFs,
+                           delPrevious = delPrevious,
+                           inhouseSteigerPcor = inhouseSteigerPcor,
+                           delIntermediaryFiles = delIntermediaryFiles,
+                           outputDir = paste0(outputDir,paste(combinations[,i],collapse = 'and',sep=""),"/"),
+                           outputName = paste0(outputName,paste(combinations[,i],collapse = 'and',sep="")),
+                           splitdriverD = splitdriverD)}}
+
+
+all_combinationsProcessing<-function(driverD, linkedD, no_samplesOut=2,colorNodesTable,outputName="CoNIOutput",outputDir="./CoNIOutput"){
+  #Get all possible combinations
+  combinations<-combn(c(1:nrow(driverD)),no_samplesOut)
+
+  for(i in 1:ncol(combinations)){
+    outputFolder<-paste0(outputDir,paste(combinations[,i],collapse = 'and',sep=""),"/")
+    #Get file name
+    file_name<-paste0(outputFolder,outputName,paste(combinations[,i],collapse = 'and',sep=""),".csv")
+    #Read File name
+    CoNI_Iter<-fread(file_name)
+    #Add adjusted pvalue
+    CoNI_Iter$cdgo_adjusted<-p.adjust(CoNI_Iter$cdgo_pvalue)
+    CoNI_Iter$cdgo2_adjusted<-p.adjust(CoNI_Iter$cdgo2_pvalue)
+    #Filter based on Pvalue
+    CoNI_Iter<- subset(CoNI_Iter,cdgo_adjusted<0.05 & cdgo2_adjusted<0.05)
+    fwrite(CoNI_Iter,paste0(outputFolder,outputName,"_SteigerFiltered_no",paste(combinations[,i],collapse = 'and',sep=""),".csv"))
+
+    ##############
+    #CreateNetwork
+    ChowNetwork_Iter<-generate_network_2(CoNI_Iter, colorNodesTable,outputDir = outputFolder,outputFileName =paste(combinations[,i],collapse = 'and',sep=""))
+    write.graph(ChowNetwork_Iter,file=paste0(outputFolder,"Chow_SteigerFiltered_no",paste(combinations[,i],collapse = 'and',sep=""),".graphml"),format="graphml")
+
+    #Find local regulated genes
+    LRGenesTable_CoNI_Iter <- find_localRegulatedFeatures(ResultsCoNI = CoNI_Iter,network = ChowNetwork_Iter )
+    LRGenes_CoNI_Iter <- as.vector(unique(LRGenesTable_CoNI_Iter$Var1))
+    write.csv(LRGenesTable_CoNI_Iter,paste0(outputFolder,"Chow_LRGenesTable",paste(combinations[,i],collapse = 'and',sep=""),".csv"))
+    write.csv(LRGenes_CoNI_Iter,paste0(outputFolder,"Chow_LRGenes",paste(combinations[,i],collapse = 'and',sep=""),".csv"))
+  }
+  print('End')
+}
+
+
+
+
+
 taskBar1<-function(pb,ntasks){
   progress<-function(n) setTkProgressBar(pb,n, label=paste(round(n/ntasks*100,0), "%"))
   opts<-list(progress=progress)
   return(opts)
 }
-
-#################
-#Ratios approach
-
-#Calculate log2FoldChanges
-calculateLog2FoldChange<-function(matx){
-  matx<-as.matrix(matx)
-  combinations<-combn(ncol(matx),2) #Get all possible combination
-  mat <- matrix(, nrow = nrow(matx), ncol = ncol(combinations)) #create empty matrix to assign all possible combinations
-  namesResults<-c()
-  for (col in 1:ncol(combinations)){
-    index1<-combinations[1,col]
-    index2<-combinations[2,col]
-
-    #Names
-    met1_name<-colnames(matx)[index1]
-    met2_name<-colnames(matx)[index2]
-    nameComb<-paste(met1_name,"__",met2_name,sep = "")
-    namesResults<-c(namesResults,nameComb)
-
-    #Log2FoldChange
-    foldChange<- matx[,index1]/matx[,index2]
-    log2FC<- log(foldChange,2)
-    mat[,col]<-log2FC
-  }
-  colnames(mat)<-namesResults
-  mat
-}
-
-#gene_exp = data1
-#log2FCData = data2
-RaReNI <- function(data1, data2,
-                   splitLog2FC=TRUE,
-                   split_number=2,
-                   outputDir="./RaReNIResults/",
-                   iteration_start=1,
-                   numCores=NULL,
-                   verbose=FALSE) { #It could be something else
-
-
-  #Check if input objects are defined
-  do_objectsExist(data1,data2,verbose)
-
-  #Check if output directory exists
-  check_outputDir(outputDir,verbose)
-
-  #Start measuring time
-  start_time <- Sys.time()
-
-  log2FC_data2<-as.data.frame(calculateLog2FoldChange(data2))
-
-  #Make sure column names are appropiate
-  colnames(data1)<-make.names(colnames(data1),unique=TRUE)
-  colnames(log2FC_data2)<-make.names(colnames(log2FC_data2),unique=TRUE)
-
-  #Split Data Frame
-  if(splitLog2FC){
-
-    #Split Log2FC data in parts
-    ls_dfs<-split_df(log2FC_data2,split_number)
-    print(paste("Log2FC Data will be split into",length(ls_dfs),"parts",sep=" "))
-
-    #Loop Log2FC parts
-    for (i in iteration_start:length(ls_dfs)){
-      df_iter<-ls_dfs[[i]]
-      print(paste('Running RaReNI Split Number',i,sep=" "))
-
-      #Register parallel backend
-      #library(doSNOW)
-      if(is.null(numCores)){
-        numCores<-detectCores()-2
-        if(verbose){cat("Running parallelization with ",numCores," cores\n",sep="")}
-      }else{
-        if(verbose){cat("Running parallelization with ",numCores," cores\n",sep="")}
-      }
-
-      #Register parallel backend
-      cl<-makeCluster(numCores)
-      registerDoSNOW(cl)
-
-      df_results = foreach(i = 1:ncol(df_iter),.packages = c("ppcor", "doParallel","cocor") , .combine=rbind,.inorder = FALSE) %dopar% { #Loop log2FC data
-        results2 =foreach(j = 1:ncol(data1),.packages = c("ppcor", "doParallel","cocor") , .combine=rbind,.verbose = FALSE,.inorder = FALSE) %dopar% { #Loop genes
-
-          #Get names
-          GeneName<-colnames(data1)[j] #gene name
-          LFC2Name<-colnames(df_iter)[i] #log2Fold change between metabolite pair...
-
-          #Vectors
-          geneVec<-data1[,j]
-          LFCMetVec<-df_iter[,i]
-
-          #Linear model
-          #Linear model
-          lmIter <- lm(LFCMetVec~geneVec)
-          modelSummary <- summary(lmIter)  # capture model summary as an object
-          modelCoeffs <- modelSummary$coefficients  # model coefficients
-          beta.estimate <- modelCoeffs[get_variableName(geneVec), "Estimate"]  # get beta estimate for speed
-          std.error <- modelCoeffs[get_variableName(geneVec), "Std. Error"]  # get std.error for speed
-          t_value <- beta.estimate/std.error  # calc t statistic
-          p_value <- modelCoeffs[get_variableName(geneVec), "Pr(>|t|)"] # calc p Value
-          #p_adjust<-p.adjust(p_value)
-          f_statistic <- modelSummary$fstatistic[[1]]  # fstatistic
-          f <- summary(lmIter)$fstatistic  # parameters for model p-value calc
-          model_p <- pf(f[1], f[2], f[3], lower=FALSE)[[1]] #model p-value
-          #model_p_adjust<-p.adjust(model_p)
-          rsquared <- summary(lmIter)$r.squared
-          rsquare_adj <- summary(lmIter)$adj.r.squared
-
-          rowtoprint<-list(LFC2Name,GeneName, #change to list instead of cbind.data.frame
-                           beta.estimate,std.error,t_value,p_value,
-                           f_statistic,model_p,rsquared,rsquare_adj)
-        }
-      }
-
-      stopCluster(cl)
-
-      df_results<-as.data.frame(df_results)
-      colnames(df_results)<-c("MetabolitePair",	"gene_name",	"beta.estimate",	"std.error",	"t_value",	"p_value",	"f_statistic",	"model_pvalue","r_squared","adjusted_r_squared")
-      df_results<-as.matrix(df_results)
-
-
-      #Save result to memory
-      writeT<-writeTable(df_results,num_cores = numCores,outputDir = outputDir,iteration = i) #Try to write using fwrite
-      if(!length(writeT)==0){write.csv(df_results,paste(outputDir,"RaReNIResultsSplit",i,".csv",sep=""))}#If fwrite fails it is written with write.csv
-
-      #Remove results
-      rm(df_results)
-    }
-    #Merge output results CoNI
-    RaReNIResults <- merge_outpuSplitFiles(outputDir)
-    print('RaReNI ran successfully')
-    return(RaReNIResults)
-  }
-}
-
-
-
 
 
 #This function tries to write a table with fread
@@ -880,7 +815,7 @@ generate_network_2<-function(ResultsCoNI, colorNodesTable,outputDir="./",outputF
 }
 
 
-#Find local regulated genes
+#Find local regulated features
 find_localRegulatedFeatures<-function(ResultsCoNI,network){
   ls2 <- length(unique(ResultsCoNI$Feature_driverD)) #get number of genes affecting metabolites
   #Distance = 2 -> Second level neighborhood?
