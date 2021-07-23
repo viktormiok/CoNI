@@ -1,0 +1,367 @@
+---
+title: "CoNI example"
+author: "José Manuel Monroy Kuhn"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+
+vignette: >
+  %\VignetteIndexEntry{CoNI example}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Introduction
+
+This vignette is an introduction to CoNI. Following this vignette, one can analyze the data in Valentina et al. (2021). CoNI is run using gene expression and metabolic data for the livers of two mice cohorts, one on a high-fat diet (HFD) and the other on a chow diet (Chow).
+
+The data can be found in ...  and in ... (git hub?). These data is already pre-processed, that is, normalized and low-count filtered. For more informaiton see Valentina et al. (2021)
+
+#### Load data after download
+```{r Download_data}
+download_folder<-"~/Documents/MethodCoNI/DataVignette/" #Change to match download directory
+working_folder<-"~/Documents/MethodCoNI/DataVignette/" #Change to match working directory
+#Chow Data
+Chow_metabo<-read.csv(paste0(download_folder,"Chow/Chow_MetaboliteData.csv"),row.names = 1)
+Chow_gene<-read.csv(paste0(download_folder,"Chow/Chow_GeneData.csv"),row.names = 1)
+#HFD data
+HFD_metabo<-read.csv(paste0(download_folder,"HFD/HFD_MetaboliteData.csv"),row.names = 1)
+HFD_gene<-read.csv(paste0(download_folder,"HFD/HFD_GeneData.csv"),row.names = 1)
+```
+
+## Correlation guided Network integration (CoNI)
+
+### Run CoNI
+Before running CoNI, one has to make sure the sample names between omics datasets match (as both omic data sets should come from the same samples). If they do not match, CoNI will throw an error.
+
+```{r load_CoNI,message=FALSE,warning=FALSE}
+#Load CoNI
+library(CoNI)
+```
+
+```{r matchRows}
+#Match rownames both omics data
+rownames(Chow_metabo)<-rownames(Chow_gene)
+rownames(HFD_metabo)<-rownames(HFD_gene)
+```
+
+To run CoNI, one can decide to keep metabolites (vertex-features) based on the significance of their pairwise correlations (padjustvertexD=FALSE) or do more stringent filtering by keeping only metabolites that significantly correlate after multiple-testing adjustment (padjustvertexD=TRUE). The user can also pre-filter the genes by keeping only those that significantly correlate with at least one metabolite (correlateDFs=TRUE).
+
+Note: This run takes around 5 hours (12 cores, 32Gb of RAM). Adjust according to the available resources.
+```{r CoNI_chow,eval=F, echo=T}
+#Run for Chow
+CoNIResults_Chow<-CoNI(edgeD = Chow_gene,vertexD = Chow_metabo,
+                       saveRaw = F,filter_highVarianceEdge = T,correlateDFs=TRUE,
+                       padjustvertexD = FALSE, split_number = 200,
+                       outputDir = paste0(working_folder,"Chow/"),outputName = "CoNIChow",
+                       splitedgeD = TRUE,numCores = 12,onlySgRes = T)
+```
+
+To speed up this vignette, load significant Chow results:
+```{r load_CoNIResults_chow}
+#Load chow results
+CoNIResults_Chow<-read.csv(paste0(download_folder,"Chow/CoNIChow_SigResults.csv"))[,-1]
+```
+
+Note: This run takes around 5 hours (12 cores, 32Gb of RAM). Adjust according to the available resources.
+```{r CoNI_hfd,eval=F, echo=T}
+#Run for HFD
+CoNIResults_HFD<-CoNI(edgeD = HFD_gene,vertexD = HFD_metabo,
+                       saveRaw = F,filter_highVarianceEdge = T,
+                       padjustvertexD = FALSE, split_number = 200,correlateDFs=TRUE,
+                       outputDir = paste0(working_folder,"HFD/"),outputName = "CoNIHFD",
+                       splitedgeD = TRUE,numCores = 12,onlySgRes = T)
+```
+
+To speed up this vignette, load significant HFD results:
+```{r load_CoNIResults_hfd}
+#Load HFD results
+CoNIResults_HFD<-read.csv(paste0(download_folder,"HFD/CoNIHFD_SigResults.csv"))[,-1]
+```
+
+To speed up the computation, CoNI splits the edge Data into chunks, and it runs in parallel using the data of these chunks. Sometimes is necessary to tune 'split_number' to avoid running out of memory. For parallelization, CoNI uses the R package doSNOW (Microsoft Corporation and Weston, 2020). One can specify the number of cores with 'numCores'.
+
+Internally in CoNI, the partial correlations are calculated with the R function ‘pcor.test’ of the package ppcor (Kim, 2015) and the Steiger tests with the function ‘cocor.dep.groups.overlap’ of the R package cocor (Diedenhofen and Musch, 2015).
+
+
+### Create networks
+
+The user can create a network/graph and assign colors to the vertexes with the function 'generate_network'. To assign colors one has to provide a table matching vertexes and colors. The vertex names in the table have to be in the first column.
+
+```{r read_metabolite_annotation}
+#Read Annotation table
+MetaboliteAnnotation<-read.csv(paste0(download_folder,"MetaboliteAnnotation.csv"))[,-1]
+
+#If colors not provided, user can assign colors automatically based on a factor variable
+MetaboliteAnnotation<-MetaboliteAnnotation[,-c(6,7)]
+MetaboliteAnnotation<-assign_colorsAnnotation(MetaboliteAnnotation,col="Class")
+```
+
+```{r network_chow}
+#Generate Network
+ChowNetwork<-generate_network(ResultsCoNI = CoNIResults_Chow,
+                             colorVertexTable = MetaboliteAnnotation,
+                             outputDir = paste0(working_folder,"Chow/"),
+                             outputFileName = "Chow")
+```
+
+One can add "Class" information to the vertexes of the network, providing a data frame to the argument "Class". The first column of the data frame corresponds to the vertexes names and another column to class. This extra information is necessary for comparing treatments, where features are summarized based on the class they belong to.
+
+```{r network_chow_class}
+#Generate Network Chow
+ChowNetworkWithClass<-generate_network(ResultsCoNI = CoNIResults_Chow,
+                             colorVertexTable = MetaboliteAnnotation,
+                             outputDir = paste0(working_folder,"Chow/"),
+                             outputFileName = "Chow",
+                             Class = MetaboliteAnnotation)
+
+```
+
+```{r network_hfd_class}
+#Generate Network HFD
+HFDNetworkWithClass<-generate_network(ResultsCoNI = CoNIResults_HFD,
+                             colorVertexTable = MetaboliteAnnotation,
+                             outputDir = paste0(working_folder,"HFD/"),
+                             outputFileName = "HFD",
+                             Class = MetaboliteAnnotation)
+```
+
+The networks are saved automatically (graphml format) and can be uploaded to Cytoscape for further exploration and visualization.
+
+### Basic network statistics
+We can obtain some basic network statistics with the function NetStats.
+```{r network_stats_chow}
+library(knitr)
+library(kableExtra)
+kable(NetStats(Network = ChowNetworkWithClass),caption="Network statistics Chow") %>% kable_styling(full_width = F)
+```
+
+```{r network_stats_hfd}
+kable(NetStats(Network = HFDNetworkWithClass),caption="Network statistics HFD")  %>% kable_styling(full_width = F)
+```
+
+### Clustering options in igraph
+
+One can further make use of the networks by applying different clustering techniques available in the igraph package (Csardi & Nepusz 2006).
+
+NOTE:For this vignette, as is small size, the networks are not displayed. Change output in the YAML metadata to html default to get a better visualization when knitting the Rmd file. Or run the code in RStudio.
+
+```{r}
+coordinates = layout_with_fr(ChowNetworkWithClass) #define layout
+```
+
+###### Community structure detecting based on the leading eigenvector (Spectral community)
+```{r spectral}
+Spectral = cluster_leading_eigen(ChowNetworkWithClass)
+#See membership for the nodes
+Spectral$membership
+```
+```{r spectral_image,fig.show='hide', out.width = '100%', out.height = '100%', fig.width = 7, fig.heigt = 7}
+#Plot the network
+plot(ChowNetworkWithClass, vertex.color=membership(Spectral), layout=coordinates)
+```
+
+###### Community structure via greedy optimization of modularity
+
+```{r greedy}
+greedy = cluster_fast_greedy(ChowNetworkWithClass)
+#See membership for the nodes
+greedy$membership
+```
+```{r greedy_image,fig.show='hide',out.width = '100%', out.height = '100%', fig.width = 7, fig.heigt = 7}
+#Plot the network
+plot(ChowNetworkWithClass, vertex.color=membership(greedy), layout=coordinates)
+```
+
+###### Community structure via greedy optimization of modularity
+```{r betweenness}
+betweenness = cluster_edge_betweenness(ChowNetworkWithClass,weights=NULL)
+#See membership for the nodes
+betweenness$membership
+```
+```{r betweenness_image,fig.show='hide',out.width = '100%', out.height = '100%', fig.width = 7, fig.heigt = 7}
+#Plot the network
+plot(ChowNetworkWithClass, vertex.color=membership(betweenness), layout=coordinates)
+```
+
+See igraph package for more options.
+
+### Local controlling genes (local controlling features)
+Local controlling genes (LCGs); are genes that appear in a network region more often than expected by chance and have a potential regulatory role. To test for an LCG, CoNI counts for every node the number of times a particular gene appears in the edges located within a two-step distance. It then applies a binomial test with a probability of 1/Dnet, where Dnet is the number of genes in the network.
+
+
+```{r local_controlling_genes_Chow}
+#Chow
+#Get results binomial test 
+LCGenes_ResultsBinomialTable_Chow<- find_localControllingFeatures(ResultsCoNI = CoNIResults_Chow,network = ChowNetworkWithClass)
+#Get list local controlling genes
+LCGenes_Chow<-as.character(unique(LCGenes_ResultsBinomialTable_Chow$edgeFeatures))
+```
+
+```{r local_controlling_genes_HFD}
+#HFD
+#Get results binomial test
+LCGenes_ResultsBinomialTable_HFD<- find_localControllingFeatures(ResultsCoNI = CoNIResults_HFD,network = HFDNetworkWithClass)
+#Get list local controlling genes
+LCGenes_HFD<-as.character(unique(LCGenes_ResultsBinomialTable_HFD$edgeFeatures))
+```
+
+The user can obtain a table of the local controlling genes matching the paired metabolites and unique metabolites.
+
+```{r local_controlling_tables}
+LCG_and_MetabolitePairs_Chow<-tableLCFs_VFs(CoNIResults = CoNIResults_Chow,LCFs = LCGenes_Chow)
+LCG_and_MetabolitePairs_CHFD<-tableLCFs_VFs(CoNIResults = CoNIResults_HFD,LCFs = LCGenes_HFD)
+```
+
+### Genes by confounding magnitude
+
+In addition to the LCGs, the user can obtain critical genes by ranking the network genes based on the difference of the correlation and partial correlation coefficients.
+
+```{r gene_Magnitude,warning=FALSE,message=FALSE}
+library(dplyr)
+CoNIResults_Chow<-CoNIResults_Chow %>% mutate(Diff_CorPcor=cor_coefficient-pcor_coefficient) %>% arrange(desc(Diff_CorPcor))
+
+CoNIResults_HFD<-CoNIResults_HFD %>% mutate(Diff_CorPcor=cor_coefficient-pcor_coefficient) %>% arrange(desc(Diff_CorPcor))
+```
+
+In the results of HFD, we can see that the largest difference between coefficients is for the triplet "PC.ae.C42.2", "PC.ae.C42.0" and "Lpin2". One can visualize the effect of "Lpin2" on the metabolites by fitting two linear models on normalized data and plotting the results. In one linear model, the slope is the correlation coefficient between metabolites, and in the other, the partial correlation coefficient.
+
+```{r CorvsPcor_oneCombination,fig.show='hold',warning=FALSE,message=FALSE,out.width="50%",fig.align='center'}
+plotPcorvsCor(ResultsCoNI = CoNIResults_HFD,edgeFeature = "Lpin2",
+              vertexFeatures = c("PC.ae.C42.2","PC.ae.C42.0"),
+              vertexD = HFD_metabo,edgeD = HFD_gene,
+              label_edgeFeature = "Gene",plot_to_screen = T,
+              outputDir = working_folder)
+
+```
+
+The user can also explore all the metabolite pairs that form triplets with the gene in question.
+
+```{r CorvsPcor_AllCombinations,fig.show='hold',warning=FALSE,message=FALSE,out.width="40%"}
+plotPcorvsCor(ResultsCoNI = CoNIResults_HFD,edgeFeature = "Lpin2",
+              vertexD = HFD_metabo,edgeD = HFD_gene,
+              label_edgeFeature = "Gene",plot_to_screen = T,
+              outputDir = working_folder)
+
+```
+
+
+### Bipartite graphs
+An alternative network representation is a bipartite graph. In this type of graph, there are two types of nodes. For the example in this vignette, one node type are genes (linker-features, inside the edges in the previous network) and the other metabolites (vertex_features, nodes in the previous network)
+
+```{r bipartite_graphs}
+#Chow
+ChowBipartiteGraph<-createBipartiteGraph(paste0(working_folder,"Chow/TableForNetwork_Chow.csv"),MetaboliteAnnotation)
+#Save bipartite graph
+write.graph(ChowBipartiteGraph,file=paste0(working_folder,"Chow/Chow_bipartite.graphml"),format="graphml")
+
+#HFD
+HFDBipartiteGraph<-createBipartiteGraph(paste0(working_folder,"HFD/TableForNetwork_HFD.csv"),MetaboliteAnnotation)
+#Save bipartite graph
+write.graph(HFDBipartiteGraph,file=paste0(working_folder,"HFD/HFD_bipartite.graphml"),format="graphml")
+```
+
+The resulting bipartite graph can be uploaded in Cytoscape for further visualization and exploration.
+
+It is also possible to obtain the adjacency matrix from the created bipartite-graph
+```{r}
+adjacency_Bipartite<-get.incidence(ChowBipartiteGraph)
+```
+
+
+
+## Comparison between treatments
+
+### Triplet comparison
+Exact triplet matching can be done as follows:
+
+```{r triplet_comparison}
+Compare_Triplets(Treat1_path = paste0(working_folder,"Chow/TableForNetwork_Chow.csv"),
+                 Treat2_path = paste0(working_folder,"HFD/TableForNetwork_HFD.csv"),
+                 OutputName = "Shared_triplets_HFDvsChow.csv")
+
+```
+No triplets were shared between treatments, reflecting the strong metabolic differences between HFD and Chow.
+
+### Compare metabolite-pair classes
+Some genes are shared between the resulting CoNI networks of Chow and HFD. These genes do not share the same metabolite pairs but they might share similar metabolite classes. 
+
+```{r}
+(LCP_sharedGene_HFDvsChow<-Compare_VertexClasses_sharedEdgeFeatures(
+                          Treat1_path = paste0(working_folder,"HFD/TableForNetwork_HFD.csv"),
+                          Treat2_path = paste0(working_folder,"Chow/TableForNetwork_Chow.csv"),
+                          OutputName = "Comparison_LipidClassesPerGene_HFDvsChow.csv",
+                          Treat1Name = "HFD",
+                          Treat2Name = "Chow"))
+```
+
+
+The results show that the shared genes also show a shift in the metabolite classes they putatively interact with.
+
+One can create a barplot of one of the shared genes to compare the metabolite-pair profile between treatments.
+
+```{r gene_metabolitePairProfile,fig.align='center',out.width="40%"}
+create_edgeFBarplot(CompTreatTable = LCP_sharedGene_HFDvsChow,
+                    edgeF = "Tap1",
+                    treat1 = "HFD",
+                    treat2 = "Chow",
+                    factorOrder = c("HFD","Chow"),
+                    col1="#E76BF3",
+                    col2 = "#F8766D",EdgeFeatureType = "Gene")
+```
+
+
+If the user wants to explore the global metabolite-pair profile of the shared genes, it can use the function create_GlobalBarplot as follows.
+
+```{r global_metabolitePairProfile,fig.align='center',fig.width = 6, fig.height = 5}
+(HFDvsChow_GlobalLipidProfile<-create_GlobalBarplot(CompTreatTable = LCP_sharedGene_HFDvsChow,
+                                                     treat1 = "HFD",
+                                                     treat2 = "Chow",
+                                                     factorOrder = c("HFD","Chow"),
+                                                     col1="#E76BF3",
+                                                     col2 = "#F8766D", 
+                                                     maxpairs = 1,
+                                                     szggrepel = 6,
+                                                     szaxisTxt = 15,
+                                                     szaxisTitle = 15,
+                                                     xlb = "Metabolite-pair classes"))
+```
+
+The user can also explore the global metabolite-pair profile of the shared genes per treatment but showing how every gene contributes to the profile.
+
+```{r stacked_metabolitePairProfile,fig.align='center',fig.show='hold',fig.width = 6, fig.height = 5}
+create_stackedGlobalBarplot_perTreatment(CompTreatTable = LCP_sharedGene_HFDvsChow,treat = "HFD",max_pairsLegend = 1,xlb = "Metabolite-class-pairs",szTitle = 20,szggrepel = 6,szaxisTxt = 15, szaxisTitle = 15)
+create_stackedGlobalBarplot_perTreatment(CompTreatTable = LCP_sharedGene_HFDvsChow,treat = "Chow",max_pairsLegend = 1,ylim = 3,xlb = "Metabolite-pair classes",szTitle = 20,szggrepel = 4,szaxisTxt = 15, szaxisTitle = 15)
+```
+
+It is possible to obtain the previous plots as a single figure and with the same y-axis range.
+
+```{r stacked_metabolitePairProfile_grid,fig.align='center',fig.width = 7, fig.height = 5}
+HFDvsChow_StackedLipidProfile<-getstackedGlobalBarplot_and_Grid(
+                                 CompTreatTable = LCP_sharedGene_HFDvsChow,
+                                 xlb = "Metabolite-pair classes",
+                                 Treat1 = "HFD",
+                                 Treat2 = "Chow",
+                                 Annotation = MetaboliteAnnotation,szTitle = 20,szggrepel = 6,
+                                 szaxisTxt = 15, szaxisTitle = 15)
+plot(HFDvsChow_StackedLipidProfile)
+```
+
+
+### Compare metabolite classes per gene
+
+The user can explore the results from the perspective of the genes and counting the metabolites per class.
+
+```{r metabolite_classes_per_gene,fig.align='center',fig.width = 7, fig.height = 5}
+HFD_vs_Chow_LCP_Gene<-getVertexsPerEdgeFeature_and_Grid(LCP_sharedGene_HFDvsChow,"HFD","Chow",Annotation=MetaboliteAnnotation,ggrep=F,small = T,szTitle = 20,szaxisTxt = 15, szaxisTitle = 15)
+plot(HFD_vs_Chow_LCP_Gene)
+```

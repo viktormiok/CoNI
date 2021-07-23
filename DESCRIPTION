@@ -10,3 +10,4 @@ License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Depends: igraph
+RoxygenNote: 7.1.1
