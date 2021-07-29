@@ -272,9 +272,9 @@ write.graph(HFDBipartiteGraph,file=paste0(working_folder,"HFD/HFD_bipartite.grap
 
 The resulting bipartite graph can be uploaded in Cytoscape for further visualization and exploration.
 
-It is also possible to obtain the adjacency matrix from the created bipartite-graph
+It is also possible to obtain a hypergraph incidence matrix instead of a bipartite graph
 ```{r}
-adjacency_Bipartite<-get.incidence(ChowBipartiteGraph)
+Chow_HypergraphIncidenceM<-createBipartiteGraph(paste0(working_folder,"Chow/TableForNetwork_Chow.csv"),MetaboliteAnnotation,incidenceMatrix = T)
 ```
 
 
