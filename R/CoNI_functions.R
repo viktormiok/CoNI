@@ -888,8 +888,9 @@ flattenCorrMatrix <- function(cormat, pmat) {
 #' Pairwise correlations
 #' @description Internal use. This function calculates the pairwise correlations of a matrix (it uses Hmisc::rcorr function) and gets the significant correlations
 #' @keywords internal
+#' @importFrom Hmisc rcorr
 sig_correlation2<-function(input_edgeD,padj=TRUE,method="BH", verb=verbose){
-  corr<-Hmisc::rcorr(as.matrix(input_edgeD),type='p')
+  corr<-rcorr(as.matrix(input_edgeD),type='p')
   corr_table<-flattenCorrMatrix(corr$r,corr$P)
   corr_table$adj.p<-p.adjust(corr_table$p,method = method)
 
@@ -1197,6 +1198,24 @@ find_localControllingFeatures<-function(ResultsCoNI,network,padjust=TRUE){
     res2 <- subset(res2,res2$Pval<0.05)
   }
   res2
+}
+
+#'Linker Features by magnitude of effect
+#'@description This function outputs the linker features with the strongest effect on the correlation of the vertex features
+#'@param ResultsCoNI The output of CoNI
+#'@param topn Top n number of features to output
+#'@return It returns the top n features with the strongest effect
+#'@export
+top_n_LF_byMagnitude<-function(ResultsCoNI, topn=10){
+  ResultsCoNI<-ResultsCoNI %>% mutate(difference=abs(cor_coefficient - pcor_coefficient)) %>% arrange(desc(difference))
+  lEdgeFeatures<-unique(ResultsCoNI$Feature_edgeD)
+  if(length(lEdgeFeatures)>=topn){
+    selectedEdgeFeatures<-lEdgeFeatures[1:topn]
+  }else{
+    selectedEdgeFeatures<-lEdgeFeatures[1:length(selectedEdgeFeatures)]
+  }
+  Out<-ResultsCoNI[ResultsCoNI$Feature_edgeD %in% selectedEdgeFeatures,]
+  return(Out)
 }
 
 #' Table local controlling edge features and vertex pairs

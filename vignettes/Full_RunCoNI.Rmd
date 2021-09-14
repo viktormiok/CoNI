@@ -227,13 +227,12 @@ LCG_and_MetabolitePairs_CHFD<-tableLCFs_VFs(CoNIResults = CoNIResults_HFD,LCFs =
 In addition to the LCGs, the user can obtain critical genes by ranking the network genes based on the difference of the correlation and partial correlation coefficients.
 
 ```{r gene_Magnitude,warning=FALSE,message=FALSE}
-library(dplyr)
-CoNIResults_Chow<-CoNIResults_Chow %>% mutate(Diff_CorPcor=cor_coefficient-pcor_coefficient) %>% arrange(desc(Diff_CorPcor))
-
-CoNIResults_HFD<-CoNIResults_HFD %>% mutate(Diff_CorPcor=cor_coefficient-pcor_coefficient) %>% arrange(desc(Diff_CorPcor))
+Top10Chow<-top_n_LF_byMagnitude(CoNIResults_Chow,topn = 10)
+Top10HFD<-top_n_LF_byMagnitude(CoNIResults_HFD,topn = 10)
+head(Top10HFD[,c(1:3,ncol(Top10HFD))])
 ```
 
-In the results of HFD, we can see that the largest difference between coefficients is for the triplet "PC.ae.C42.2", "PC.ae.C42.0" and "Lpin2". One can visualize the effect of "Lpin2" on the metabolites by fitting two linear models on normalized data and plotting the results. In one linear model, the slope is the correlation coefficient between metabolites, and in the other, the partial correlation coefficient.
+In the results of HFD, we can see that the largest difference between coefficients is for the triplet "PC.ae.C42.2", "PC.ae.C42.0" and "Lpin2". One can visualize the effect of "Lpin2" on the metabolites by fitting two linear models on standardize data and plotting the results. One model we use the metabolite expression and in the other the residuals from the linear models between the gene and each of the metabolites. In one linear model, the slope is the correlation coefficient between metabolites, and in the other, the partial correlation coefficient.
 
 ```{r CorvsPcor_oneCombination,fig.show='hold',warning=FALSE,message=FALSE,out.width="50%",fig.align='center'}
 plotPcorvsCor(ResultsCoNI = CoNIResults_HFD,edgeFeature = "Lpin2",
@@ -246,7 +245,7 @@ plotPcorvsCor(ResultsCoNI = CoNIResults_HFD,edgeFeature = "Lpin2",
 
 The user can also explore all the metabolite pairs that form triplets with the gene in question.
 
-```{r CorvsPcor_AllCombinations,fig.show='hold',warning=FALSE,message=FALSE,out.width="40%"}
+```{r CorvsPcor_AllCombinations,fig.show='hold',warning=FALSE,message=FALSE,out.width="40%",fig.show='hide'}
 plotPcorvsCor(ResultsCoNI = CoNIResults_HFD,edgeFeature = "Lpin2",
               vertexD = HFD_metabo,edgeD = HFD_gene,
               label_edgeFeature = "Gene",plot_to_screen = T,

@@ -9,5 +9,19 @@ Description: CoNI integrates data from two different sources using partial corre
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-Depends: igraph
+Depends: R (>= 4.0.3)
 RoxygenNote: 7.1.1
+Imports: igraph (>= 1.2.6),
+         doSNOW (>= 1.0.19),
+         doParallel (>= 1.0.16),
+         cocor (>= 1.1.3),
+         tidyverse (>= 1.3.0),
+         foreach (>= 1.5.1),
+         genefilter (>= 1.72.1),
+         ggrepel (>= 0.9.1),
+         gplots (>= 3.1.1),
+         gridExtra (>= 2.3),
+         plyr (>= 1.8.6),
+         ppcor (>= 1.1),
+         tidyr (>= 1.1.3),
+         Hmisc (>= 4.4.2)
