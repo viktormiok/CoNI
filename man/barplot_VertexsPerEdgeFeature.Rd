@@ -13,7 +13,9 @@ barplot_VertexsPerEdgeFeature(
   szggrepel = 2.5,
   szTitle = 12,
   szaxisTxt = 12,
-  szaxisTitle = 12
+  szaxisTitle = 12,
+  szLegendText = 10,
+  szLegendKey = 1
 )
 }
 \description{

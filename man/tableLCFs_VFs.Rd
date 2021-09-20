@@ -2,18 +2,18 @@
 % Please edit documentation in R/CoNI_functions.R
 \name{tableLCFs_VFs}
 \alias{tableLCFs_VFs}
-\title{Table local controlling edge features and vertex pairs}
+\title{Table local confounding edge features and vertex pairs}
 \usage{
 tableLCFs_VFs(CoNIResults, LCFs)
 }
 \arguments{
 \item{CoNIResults}{The output of CoNI (after p-adjustment)}
 
-\item{LCFs}{Local controlling edge features as a vector}
+\item{LCFs}{Local confounding edge features as a vector}
 }
 \value{
-Summary table of local Controlling edge features and their respective vertex pairs, and unique vertexes.
+Summary table of local confounding edge features and their respective vertex pairs, and unique vertexes.
 }
 \description{
-This function creates a table of the local controlling edge features
+This function creates a table of the local confounding edge features
 }

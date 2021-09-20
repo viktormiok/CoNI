@@ -156,6 +156,7 @@ One can further make use of the networks by applying different clustering techni
 NOTE:For this vignette, as is small size, the networks are not displayed. Change output in the YAML metadata to html default to get a better visualization when knitting the Rmd file. Or run the code in RStudio.
 
 ```{r}
+library(igraph)
 coordinates = layout_with_fr(ChowNetworkWithClass) #define layout
 ```
 
@@ -195,22 +196,22 @@ plot(ChowNetworkWithClass, vertex.color=membership(betweenness), layout=coordina
 
 See igraph package for more options.
 
-### Local controlling genes (local controlling features)
-Local controlling genes (LCGs); are genes that appear in a network region more often than expected by chance and have a potential regulatory role. To test for an LCG, CoNI counts for every node the number of times a particular gene appears in the edges located within a two-step distance. It then applies a binomial test with a probability of 1/Dnet, where Dnet is the number of genes in the network.
+### Local confounding genes (local confounding edge features)
+Local confounding genes (LCGs); are genes that appear in a network region more often than expected by chance and have a potential regulatory role. To test for an LCG, CoNI counts for every node the number of times a particular gene appears in the edges located within a two-step distance. It then applies a binomial test with a probability of 1/Dnet, where Dnet is the number of genes in the network.
 
 
-```{r local_controlling_genes_Chow}
+```{r local_confounding_genes_Chow}
 #Chow
 #Get results binomial test 
-LCGenes_ResultsBinomialTable_Chow<- find_localControllingFeatures(ResultsCoNI = CoNIResults_Chow,network = ChowNetworkWithClass)
+LCGenes_ResultsBinomialTable_Chow<- find_localConfoundingFeatures(ResultsCoNI = CoNIResults_Chow,network = ChowNetworkWithClass)
 #Get list local controlling genes
 LCGenes_Chow<-as.character(unique(LCGenes_ResultsBinomialTable_Chow$edgeFeatures))
 ```
 
-```{r local_controlling_genes_HFD}
+```{r local_confounding_genes_HFD}
 #HFD
 #Get results binomial test
-LCGenes_ResultsBinomialTable_HFD<- find_localControllingFeatures(ResultsCoNI = CoNIResults_HFD,network = HFDNetworkWithClass)
+LCGenes_ResultsBinomialTable_HFD<- find_localConfoundingFeatures(ResultsCoNI = CoNIResults_HFD,network = HFDNetworkWithClass)
 #Get list local controlling genes
 LCGenes_HFD<-as.character(unique(LCGenes_ResultsBinomialTable_HFD$edgeFeatures))
 ```

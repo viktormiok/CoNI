@@ -15,7 +15,8 @@ getVertexsPerEdgeFeature(
   onlyTable = F,
   szTitle = 12,
   szaxisTxt = 12,
-  szaxisTitle = 12
+  szaxisTitle = 12,
+  ...
 )
 }
 \arguments{

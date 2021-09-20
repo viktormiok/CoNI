@@ -72,10 +72,10 @@
 #'                 outputDir = "./Chow/",
 #'                 outputFileName = "Chow")
 #'
-#' #Find local controlling genes
-#' #Note: In this tiny example there are no local controlling genes
-#' LRGenes_BinomialTestTableHFD<- find_localControllingFeatures(ResultsCoNI = CoNIResultsHFD,network = HFDNetwork )
-#' LRGenes_BinomialTestTableChow<- find_localControllingFeatures(ResultsCoNI = CoNIResultsChow,network = ChowNetwork )
+#' #Find local confounding genes
+#' #Note: In this tiny example there are no local confounding genes
+#' LCGenes_BinomialTestTableHFD<- find_localconfoundingFeatures(ResultsCoNI = CoNIResultsHFD,network = HFDNetwork )
+#' LCGenes_BinomialTestTableChow<- find_localconfoundingFeatures(ResultsCoNI = CoNIResultsChow,network = ChowNetwork )
 #' @import doSNOW
 #' @import parallel
 #' @import foreach
@@ -625,11 +625,11 @@ all_combinationsProcessing<-function(edgeD, vertexD, no_samplesOut=2,colorNodesT
     ChowNetwork_Iter<-generate_network(CoNI_Iter, colorNodesTable,outputDir = outputFolder,outputFileName =paste(combinations[,i],collapse = 'and',sep=""))
     write.graph(ChowNetwork_Iter,file=paste0(outputFolder,"Chow_SteigerFiltered_no",paste(combinations[,i],collapse = 'and',sep=""),".graphml"),format="graphml")
 
-    #Find local controlling genes
-    LRGenesTable_CoNI_Iter <- find_localControllingFeatures(ResultsCoNI = CoNI_Iter,network = ChowNetwork_Iter )
+    #Find local confounding edge features
+    LRGenesTable_CoNI_Iter <- find_localConfoundingFeatures(ResultsCoNI = CoNI_Iter,network = ChowNetwork_Iter )
     LRGenes_CoNI_Iter <- as.vector(unique(LRGenesTable_CoNI_Iter$Var1))
-    write.csv(LRGenesTable_CoNI_Iter,paste0(outputFolder,"Chow_LRGenesTable",paste(combinations[,i],collapse = 'and',sep=""),".csv"))
-    write.csv(LRGenes_CoNI_Iter,paste0(outputFolder,"Chow_LRGenes",paste(combinations[,i],collapse = 'and',sep=""),".csv"))
+    write.csv(LRGenesTable_CoNI_Iter,paste0(outputFolder,"Chow_LCGenesTable",paste(combinations[,i],collapse = 'and',sep=""),".csv"))
+    write.csv(LRGenes_CoNI_Iter,paste0(outputFolder,"Chow_LCGenes",paste(combinations[,i],collapse = 'and',sep=""),".csv"))
   }
   print('End')
 }
@@ -1102,11 +1102,12 @@ generate_network<-function(ResultsCoNI, ColorVertexNetwork=TRUE,colorVertexTable
   if(!is.null(Class)){
     if(ncol(Class)<2){
       stop("The 'Class' data frame provided is not correct")
-    }else if(!any(grepl("Class",colnames(Class),ignore.case=TRUE))){
+    }else if(!any(grepl("Class$",colnames(Class),ignore.case=TRUE))){
       stop("The 'Class' data frame does not contain a 'Class' column")
     }
-    clinksd$Vertex1_Class<-Class[match(clinksd$from,Class[,1]),which(colnames(Class)=="Class")]
-    clinksd$Vertex2_Class<-Class[match(clinksd$to,Class[,1]),which(colnames(Class)=="Class")]
+    idxClass<-grep("Class$",colnames(Class),ignore.case = TRUE)
+    clinksd$Vertex1_Class<-Class[match(clinksd$from,make.names(Class[,1])),idxClass] #make.names is necessary as the results files returns make.names feature names
+    clinksd$Vertex2_Class<-Class[match(clinksd$to,make.names(Class[,1])),idxClass]
   }
   write.csv(clinksd,paste(outputDir,"TableForNetwork_",outputFileName,".csv",sep=""),row.names=FALSE)
 
@@ -1148,15 +1149,15 @@ generate_network<-function(ResultsCoNI, ColorVertexNetwork=TRUE,colorVertexTable
   return(netd_simple)
 }
 
-#' Find local controlling features
+#' Find local confounding features
 #' @description This function applies for a selected subnetwork a binomial test using the frequency of appearance of an edge feature and the total number of edge features. The probability corresponds to 1/n_df, where n_df corresponds to the total number of edge features in the network.
 #' The selected subnetwork corresponds to the second level neighborhood of a specific node. The test is applied to all possible second level neighborhoods in the network.
 #' @param ResultsCoNI The output of CoNI (after p-adjustment)
 #' @param network Network created with the function generate_network
 #' @param padjust logical. Filter output based on adjusted p values
-#' @return The function returns a table with the results of the binomial tests. Significant results correspond to local Controlling features
+#' @return The function returns a table with the results of the binomial tests. Significant results correspond to local Confounding features
 #' @export
-find_localControllingFeatures<-function(ResultsCoNI,network,padjust=TRUE){
+find_localConfoundingFeatures<-function(ResultsCoNI,network,padjust=TRUE){
   ls2 <- length(unique(ResultsCoNI$Feature_edgeD)) #get number of genes affecting metabolites
   #Distance = 2 -> Second level neighborhood?
   df <- list()
@@ -1214,15 +1215,15 @@ top_n_LF_byMagnitude<-function(ResultsCoNI, topn=10){
   }else{
     selectedEdgeFeatures<-lEdgeFeatures[1:length(selectedEdgeFeatures)]
   }
-  Out<-ResultsCoNI[ResultsCoNI$Feature_edgeD %in% selectedEdgeFeatures,]
+  Out<-as.data.frame(ResultsCoNI[ResultsCoNI$Feature_edgeD %in% selectedEdgeFeatures,])
   return(Out)
 }
 
-#' Table local controlling edge features and vertex pairs
-#' @description This function creates a table of the local controlling edge features
+#' Table local confounding edge features and vertex pairs
+#' @description This function creates a table of the local confounding edge features
 #' @param CoNIResults The output of CoNI (after p-adjustment)
-#' @param LCFs Local controlling edge features as a vector
-#' @return Summary table of local Controlling edge features and their respective vertex pairs, and unique vertexes.
+#' @param LCFs Local confounding edge features as a vector
+#' @return Summary table of local confounding edge features and their respective vertex pairs, and unique vertexes.
 #' @export
 tableLCFs_VFs<-function(CoNIResults,LCFs){
   CoNIResults_LCFs<-CoNIResults[CoNIResults$Feature_edgeD %in% LCFs,]
@@ -1241,7 +1242,7 @@ tableLCFs_VFs<-function(CoNIResults,LCFs){
   #Add to the LCFs and Metabolites pairs the unique individual metabolites
   LCFs_and_MPairs$Metabolites<-plyr::ddply(temp, plyr::.(Feature_edgeD), plyr::summarize,
                                      Metabolites=paste(unique(c(as.character(Feature_1_vertexD),as.character(Feature_2_vertexD))),collapse=","))[,2]
-  colnames(LCFs_and_MPairs)<-c("Local Controlling edge Feature","Vertex Feature pairs","Vertex Features")
+  colnames(LCFs_and_MPairs)<-c("Local Confounding edge Feature","Vertex Feature pairs","Vertex Features")
   LCFs_and_MPairs
 }
 
@@ -1622,7 +1623,7 @@ chunk2 <- function(x,n) split(x, cut(seq_along(x), n, labels = FALSE))
 #' Number Vertex features per class for every shared edge feature
 #' @description This function creates a barplot depicting the number of vertex features per class for every edge feature. To use this function one has to split first the file (or not if it is small) with the funciton chunk2
 #' @keywords internal
-barplot_VertexsPerEdgeFeature<-function(SplitFile,title="Vertex Features per class",AnnotationWithColors,ggrepelL=TRUE,xlb="Gene",szggrepel=2.5,szTitle=12,szaxisTxt=12,szaxisTitle=12){
+barplot_VertexsPerEdgeFeature<-function(SplitFile,title="Vertex Features per class",AnnotationWithColors,ggrepelL=TRUE,xlb="Gene",szggrepel=2.5,szTitle=12,szaxisTxt=12,szaxisTitle=12,szLegendText=10,szLegendKey=1){
   group.colors<-obtain_groupcolors(AnnotationWithColors)
   #Get table that counts how many times the EdgeFeature appears,
   #every time corresponds to a number of a specific Vertex class
@@ -1638,8 +1639,9 @@ barplot_VertexsPerEdgeFeature<-function(SplitFile,title="Vertex Features per cla
   g<-ggplot(SplitFile, aes(x=EdgeFeature, y=as.numeric(Count), fill=VertexClass,group=Id))+
     geom_bar(width = 1,stat="identity",position=position_dodge(0.7)) +
     theme(axis.text.x = element_text(angle = 45, hjust=1),
-          legend.title = element_text(size = 12),
-          legend.text = element_text(size = 10),
+          legend.title = element_text(size = szLegendText+2),
+          legend.text = element_text(size = szLegendText),
+          legend.key.size = unit(szLegendKey,"cm"),
           plot.title = element_text(hjust = 0.5,size=szTitle,face="bold"),
           axis.title.y=element_text(angle=90),
           axis.title=element_text(size = szaxisTitle,face="bold", colour = "black"),
@@ -1661,6 +1663,7 @@ barplot_VertexsPerEdgeFeature<-function(SplitFile,title="Vertex Features per cla
     )
   }
   g<-g + ggtitle(title)
+
   return(g)
 }
 
@@ -1693,7 +1696,7 @@ getVertexsPerEdgeFeature<-function(CompTreatTable,Annotation,chunks=5,treat=NULL
                                    onlyTable=F,
                                    szTitle = 12,
                                    szaxisTxt=12,
-                                   szaxisTitle=12){
+                                   szaxisTitle=12,...){
   if(is.null(treat)){
     stop("Specify treatment")
   }
@@ -1713,11 +1716,11 @@ getVertexsPerEdgeFeature<-function(CompTreatTable,Annotation,chunks=5,treat=NULL
     SplitIntoPieces<-chunk2(x = EdgeFeatures,chunks)
     for(i in 1:chunks){
       Split<-EdgeFeatureVertex[EdgeFeatureVertex$EdgeFeature %in% SplitIntoPieces[[i]],]
-      barplots[[i]]<-barplot_VertexsPerEdgeFeature(Split,title = treat,AnnotationWithColors = Annotation,ggrepelL = ggrep,xlb = xlb,szaxisTxt = szaxisTxt,szaxisTitle=szaxisTitle)
+      barplots[[i]]<-barplot_VertexsPerEdgeFeature(Split,title = treat,AnnotationWithColors = Annotation,ggrepelL = ggrep,xlb = xlb,szaxisTxt = szaxisTxt,szaxisTitle=szaxisTitle,...)
       cat(max(Split$Count),"\n")
     }
   }else{
-    barplots[[1]]<-barplot_VertexsPerEdgeFeature(EdgeFeatureVertex,title=treat,AnnotationWithColors = Annotation,ggrepelL=ggrep,xlb = xlb,szaxisTxt = szaxisTxt,szaxisTitle=szaxisTitle,szTitle=szTitle)
+    barplots[[1]]<-barplot_VertexsPerEdgeFeature(EdgeFeatureVertex,title=treat,AnnotationWithColors = Annotation,ggrepelL=ggrep,xlb = xlb,szaxisTxt = szaxisTxt,szaxisTitle=szaxisTitle,szTitle=szTitle,...)
     cat(max(EdgeFeatureVertex$Count),"\n")
   }
   return(barplots)

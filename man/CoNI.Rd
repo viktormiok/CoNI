@@ -122,8 +122,8 @@ ChowNetwork<-generate_network(ResultsCoNI = CoNIResultsChow,
                 outputDir = "./Chow/",
                 outputFileName = "Chow")
 
-#Find local controlling genes
-#Note: In this tiny example there are no local controlling genes
-LRGenes_BinomialTestTableHFD<- find_localControllingFeatures(ResultsCoNI = CoNIResultsHFD,network = HFDNetwork )
-LRGenes_BinomialTestTableChow<- find_localControllingFeatures(ResultsCoNI = CoNIResultsChow,network = ChowNetwork )
+#Find local confounding genes
+#Note: In this tiny example there are no local confounding genes
+LCGenes_BinomialTestTableHFD<- find_localconfoundingFeatures(ResultsCoNI = CoNIResultsHFD,network = HFDNetwork )
+LCGenes_BinomialTestTableChow<- find_localconfoundingFeatures(ResultsCoNI = CoNIResultsChow,network = ChowNetwork )
 }
