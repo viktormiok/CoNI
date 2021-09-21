@@ -1,7 +1,7 @@
 CoNI
 ========
 
-## Correlation Guided Network Integration (CoNI)
+## Correlation Guided Network Integration
 
 ### Short package description:
 `CoNI` is a practical R package for the unsupervised integration of numerical omics datasets. Our tool is based on partial correlations to identify putative confounding variables for a set of paired dependent variables. `CoNI` combines two omics datasets in an integrated, complex hypergraph-like network, represented as a weighted undirected graph, a bipartite graph, or a hypergraph structure. 
