@@ -7,16 +7,16 @@
 create_stackedGlobalBarplot_perTreatment(
   CompTreatTable,
   treat = NULL,
-  max_pairsLegend = 2,
-  ylim = NULL,
-  force = 0.1,
   xlb = "Vertex-Class Pairs",
   ylb = "Number of pairs",
+  max_pairsLegend = 2,
   mx.overlaps = Inf,
   szggrepel = 6,
+  force = 0.1,
   szTitle = 12,
   szaxisTxt = 12,
-  szaxisTitle = 12
+  szaxisTitle = 12,
+  ylim = NULL
 )
 }
 \arguments{
@@ -24,21 +24,25 @@ create_stackedGlobalBarplot_perTreatment(
 
 \item{treat}{Name of treatment to display. It should match the column name in the output of Compare_VertexClasses_sharedEdgeFeatures}
 
-\item{max_pairsLegend}{If number of Edge Features >= max_pairsLegend, display number of Edge Features}
-
 \item{xlb}{Name for x-axis}
 
 \item{ylb}{Name for y-axis}
 
+\item{max_pairsLegend}{If number of Edge Features >= max_pairsLegend, display number of Edge Features as label with ggrepel}
+
 \item{mx.overlaps}{Max number of overlaps ggrepel}
 
 \item{szggrepel}{Size ggrepel labels}
+
+\item{force}{Repelling force for ggrepel labels}
 
 \item{szTitle}{Size Title}
 
 \item{szaxisTxt}{Size axis text}
 
 \item{szaxisTitle}{Size axis titles}
+
+\item{ylim}{Optional y-limits of the plot}
 }
 \value{
 A stacked barplot showing the vertex-class pairs profile of all shared edge features but restricted to a single treatment. Every bar consists of multiple genes that are depicted with different colors
@@ -47,8 +51,9 @@ A stacked barplot showing the vertex-class pairs profile of all shared edge feat
 This function will create a stacked barplot from the output of Compare_VertexClasses_sharedEdgeFeatures using all shared Edge Features (e.g., genes) between two treatments.
 }
 \examples{
-create_stackedGlobalBarplot_perTreatment(CompTreatTable = LCP_HFDvsChow,
+data(VertexClassesSharedGenes_HFDvsChow)
+create_stackedGlobalBarplot_perTreatment(CompTreatTable = VertexClassesSharedGenes_HFDvsChow,
                                          treat = "HFD",
-                                         max_pairsLegend = 1,
+                                         max_pairsLegend = 9,
                                          xlb = "Metabolite-class-pairs")
 }

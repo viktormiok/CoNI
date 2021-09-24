@@ -7,6 +7,6 @@
 chunk2(x, n)
 }
 \description{
-Function to split the EdgeFeatures in smaller groups
+Internal use. Function to split the EdgeFeatures in smaller groups
 }
 \keyword{internal}

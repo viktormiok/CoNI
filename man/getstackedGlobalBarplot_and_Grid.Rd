@@ -8,13 +8,12 @@ getstackedGlobalBarplot_and_Grid(
   CompTreatTable,
   Treat1,
   Treat2,
-  Annotation,
   ggrep = T,
   max_pairsLegend = 1,
   force = 0.1,
-  xlb = "Vertex-Class Pairs",
   mx.overlaps = Inf,
   szggrepel = 6,
+  xlb = "Vertex-Class Pairs",
   ...
 )
 }
@@ -27,13 +26,17 @@ getstackedGlobalBarplot_and_Grid(
 
 \item{ggrep}{logical. If TRUE includes ggrepel labels for every bar}
 
-\item{max_pairsLegend}{If number of Edge Features >= max_pairsLegend, display number of Edge Features}
+\item{max_pairsLegend}{If number of Edge Features >= max_pairsLegend, display number of Edge Features as ggrepel label}
+
+\item{force}{Repelling force for ggrepel labels}
 
 \item{mx.overlaps}{Max number of overlaps ggrepel}
 
 \item{szggrepel}{Size ggrepel labels}
 
-\item{xlab}{Name for x-axis}
+\item{xlb}{Name for x-axis}
+
+\item{...}{Other parameters for inner functions, mainly ggplot2 visual parameters}
 }
 \value{
 A stacked barplot showing the vertex-class pairs profile of all shared edge features between two treatments (one bar plot per treatment). Every bar consists of multiple genes that are depicted with different colors
@@ -42,11 +45,12 @@ A stacked barplot showing the vertex-class pairs profile of all shared edge feat
 This function will create a stacked barplot from the output of Compare_VertexClasses_sharedEdgeFeatures using all shared Edge Features (e.g., genes) between two treatments. Results of both Treatments are side by side for better comparison.
 }
 \examples{
-HFD_vs_Chow_stackedBarplot<-getstackedGlobalBarplot_and_Grid(CompTreatTable = LCP_HFDvsChow,
+data(VertexClassesSharedGenes_HFDvsChow)
+VCSGs<-VertexClassesSharedGenes_HFDvsChow
+HFD_vs_Chow_stackedBarplot<-getstackedGlobalBarplot_and_Grid(VCSGs,
                                                              Treat1 = "HFD",
                                                              Treat2 = "Chow",
-                                                             Annotation = MetColorTable,
-                                                             xlb = "Metabolite-class-pairs")
-plot(HFD_vs_Chow_stackedBarplot) #Plot to screen
-ggsave(HFD_vs_Chow_stackedBarplot,file="./HFD_vs_Chow_ClassProfile.svg") #or save it
+                                                             xlb = "Metabolite-class-pairs",
+                                                             max_pairsLegend=9)
+plot(HFD_vs_Chow_stackedBarplot)
 }

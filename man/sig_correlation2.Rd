@@ -4,7 +4,7 @@
 \alias{sig_correlation2}
 \title{Pairwise correlations}
 \usage{
-sig_correlation2(input_edgeD, padj = TRUE, method = "BH", verb = verbose)
+sig_correlation2(input_edgeD, padj = TRUE, method = "BH", verb)
 }
 \description{
 Internal use. This function calculates the pairwise correlations of a matrix (it uses Hmisc::rcorr function) and gets the significant correlations

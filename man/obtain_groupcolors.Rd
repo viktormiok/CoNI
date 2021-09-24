@@ -7,6 +7,6 @@
 obtain_groupcolors(Annotation)
 }
 \description{
-This function gets the rgb colors of every (lipid) class and names them according to the class
+Internal use. This function gets the rgb colors of every (lipid) class and names them according to the class
 }
 \keyword{internal}

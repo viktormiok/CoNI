@@ -13,6 +13,6 @@ labels2colors_2(
 )
 }
 \description{
-This function is modified version of labels2colors of WGCNA and the internet
+Internal use. This function is modified version of labels2colors of WGCNA and the internet
 }
 \keyword{internal}

@@ -24,8 +24,5 @@ The shared triplets between two CoNI runs
 Compare vertexFeature-vertexFeature-edgeFeature between two treatments, that is, find the shared triplets between two different CoNI runs.
 }
 \examples{
-SharedTriplets<-Compare_Triplets(Treat1_path = "./Chow/TableForNetwork_Chow.csv",
-                 Treat2_path = "./HFD/TableForNetwork_HFD.csv",
-                 OutputName = "./Shared_genes-edges_HFDvsChow.csv")
-
+#For an example see the vignette
 }

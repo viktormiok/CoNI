@@ -7,6 +7,6 @@
 countClassPerEdgeFeature(ResTable, treatment = "Chow")
 }
 \description{
-This function counts for every edge feature the number of (lipids/)features per class. It disregards the number of (lipid) pairs...
+Internal use. This function counts for every edge feature the number of vertex features (e.g. lipids) per class. It disregards the number of vertex pairs...
 }
 \keyword{internal}

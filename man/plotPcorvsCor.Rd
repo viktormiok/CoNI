@@ -9,13 +9,14 @@ plotPcorvsCor(
   edgeFeature,
   vertexD,
   edgeD,
-  label_edgeFeature = "Gene",
   vertexFeatures = NULL,
-  plot_to_screen = T,
   outputDir = "./",
-  file_name = paste0(outputDir, edgeFeature, ".pdf"),
+  fname,
+  label_edgeFeature = "Edge Feature",
+  plot_to_screen = T,
   height = 10,
-  width = 8
+  width = 8,
+  saveFiles = FALSE
 )
 }
 \arguments{
@@ -27,27 +28,54 @@ plotPcorvsCor(
 
 \item{edgeD}{Edge data that was given as input to CoNI}
 
-\item{label_edgeFeature}{Name for plot title e.g. Gene or Protein}
-
 \item{vertexFeatures}{The vertex features to include as a list. If not specified all metabolites available in combination with the edgeFeature will be used}
 
-\item{plot_to_screen}{logical. If TRUE plots will be outputted to the plotting screen}
+\item{outputDir}{Output directory with path}
 
-\item{file_name}{File name to save the plots}
+\item{fname}{File name to save the plots}
+
+\item{label_edgeFeature}{Name for plot title e.g. Gene or Protein}
+
+\item{plot_to_screen}{logical. If TRUE plots will be outputted to the plotting screen}
 
 \item{height}{height of the plotting area for the saved file}
 
 \item{width}{width of the plotting are for the saved file}
+
+\item{saveFiles}{logical. If FALSE plot is not saved to disk}
 }
 \description{
 This function generates a scatter plot with two regression lines. The slopes of the regression lines correspond to the correlation and partial correlation coefficients (blue for cor and red for pcor)
 }
 \examples{
+#Load gene expression - Toy dataset of two treatments
+data(GeneExpToy)
+#Samples in rows and genes in columns
+GeneExp <- as.data.frame(t(GeneExpToy))
+hfd_gene <- GeneExp[1:8,] #high fat diet
+chow_gene<- GeneExp[9:nrow(GeneExp),] #chow diet
 
-#Plot gene of interest, included in the results of CoNI
-plotPcorvsCor(ResultsCoNI = CoNIResults,edgeFeature = "Hpgd",
-              vertexD = hfd_metabo,edgeD = hfd_gene,
+#Load metabolite expression - Toy dataset of two treatments
+data(MetaboExpToy)
+MetaboExp <- MetaboExpToy
+hfd_metabo <- MetaboExp[11:18,] #high fat diet
+chow_metabo <- MetaboExp[1:10,] #chow diet
+
+#Match row names both data sets
+rownames(hfd_metabo)<-rownames(hfd_gene)
+rownames(chow_metabo)<-rownames(chow_gene)
+
+#Load CoNI results
+data(CoNIResultsHFDToy)
+
+plotPcorvsCor(ResultsCoNI = CoNIResultsHFDToy,
+              edgeFeature = "Arfrp1",
+              vertexFeatures = c("PC.ae.C40.2", "SM..OH..C22.1"),
+              vertexD = hfd_metabo,
+              edgeD = hfd_gene,
               label_edgeFeature = "Gene",
-              plot_to_screen = T,height = 10)
+              plot_to_screen = TRUE,
+              height = 10,
+              saveFiles = FALSE)
 
 }

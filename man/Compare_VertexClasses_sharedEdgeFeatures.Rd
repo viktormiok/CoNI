@@ -2,7 +2,7 @@
 % Please edit documentation in R/CoNI_functions.R
 \name{Compare_VertexClasses_sharedEdgeFeatures}
 \alias{Compare_VertexClasses_sharedEdgeFeatures}
-\title{Compare VertexClass pairs of shared Edge Features}
+\title{Table VertexClass pairs of shared Edge Features}
 \usage{
 Compare_VertexClasses_sharedEdgeFeatures(
   Treat1_path,
@@ -30,9 +30,5 @@ A table with all possible vertex class pairs and their numbers per treatment.
 Compare VertexClass pairs of the shared Edge Features of two treatments (e.g., lipid-class-pairs per shared gene)
 }
 \examples{
-LCP_HFDvsChow<-Compare_VertexClasses_sharedEdgeFeatures(Treat1_path = "./HFD/TableForNetwork_HFD.csv",
-                                                        Treat2_path = "./Chow/TableForNetwork_Chow.csv",
-                                                        OutputName = "./Comparison_NumberLipidClassPairsPerGene_HFDvsChow.csv",
-                                                        Treat1Name = "HFD",
-                                                        Treat2Name = "Chow")
+#For an example see the vignette
 }

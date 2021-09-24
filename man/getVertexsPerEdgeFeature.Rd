@@ -28,11 +28,11 @@ getVertexsPerEdgeFeature(
 
 \item{treat}{Specify the treatment for which the plot will be created. It should be one of the two treatments in the output of Compare_VertexClasses_sharedEdgeFeatures.}
 
-\item{small}{logical. If only a few proteins are in the input set as TRUE. A single plot will be created}
+\item{small}{logical. If only a few edge features are in the input set as TRUE. A single plot will be created}
 
 \item{ggrep}{logical. If TRUE includes ggrepel labels for every bar}
 
-\item{xlb}{Change the x-axis label}
+\item{xlb}{x-axis label}
 
 \item{onlyTable}{logical. If TRUE a table is returned instead of a plot}
 
@@ -41,6 +41,8 @@ getVertexsPerEdgeFeature(
 \item{szaxisTxt}{Size axis text}
 
 \item{szaxisTitle}{Size axis title}
+
+\item{...}{Other parameters for inner functions, mainly ggplot2 visual parameters}
 }
 \value{
 A barplot depicting the number of vertex features per class for every shared edge features between two treatments. The barplot restricts to one treatment.
@@ -49,7 +51,10 @@ A barplot depicting the number of vertex features per class for every shared edg
 This function creates a barplot depicting the number of vertex features per class for every shared edge feature between two treatments.
 }
 \examples{
-getVertexsPerEdgeFeature(CompTreatTable = LCP_HFDvsChow,
+data(VertexClassesSharedGenes_HFDvsChow)
+data(MetColorTable)
+#Note: No differences in example as all the Output of CoNI was kept
+getVertexsPerEdgeFeature(CompTreatTable = VertexClassesSharedGenes_HFDvsChow,
                          Annotation = MetColorTable,
                          chunks = 2,
                          treat = "HFD")

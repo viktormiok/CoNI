@@ -7,6 +7,6 @@
 createBipartiteTable(CoNINetworkTable)
 }
 \description{
-This function creates a table that is used to create a simple bipartite network
+Internal use. This function creates a table that is used to create a simple bipartite network
 }
 \keyword{internal}

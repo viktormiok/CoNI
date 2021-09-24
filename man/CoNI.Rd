@@ -7,24 +7,25 @@
 CoNI(
   edgeD,
   vertexD,
+  outputDir = "./CoNIOutput/",
+  saveRaw = TRUE,
   outputNameRaw = "CoNIOutput",
-  edgeDname = "edgeD",
-  vertexDname = "vertexD",
-  padjustvertexD = TRUE,
   onlySgRes = FALSE,
   multipleTAdj = TRUE,
+  padjustvertexD = TRUE,
   correlateDFs = TRUE,
+  filter_highVarianceEdge = TRUE,
   splitedgeD = TRUE,
   split_number = 2,
-  outputDir = "./CoNIOutput/",
   delPrevious = FALSE,
   delIntermediaryFiles = TRUE,
   iteration_start = 1,
   numCores = NULL,
   verbose = TRUE,
-  filter_highVarianceEdge = TRUE,
   more_coef = FALSE,
-  saveRaw = TRUE
+  edgeDname = "edgeD",
+  vertexDname = "vertexD",
+  saveFiles = TRUE
 )
 }
 \arguments{
@@ -32,21 +33,25 @@ CoNI(
 
 \item{vertexD}{Object to use as second data input (e.g., metabolite expression)}
 
-\item{outputNameRaw}{Name for the raw output file if saved}
+\item{outputDir}{Output Directory where results are stored}
 
-\item{padjustvertexD}{logical. If TRUE vertexD is filtered according to the significant adjusted p-value of its pairwise correlations}
+\item{saveRaw}{logical. If TRUE the raw output of CoNI is saved in the output directory (outputDir)}
+
+\item{outputNameRaw}{Name for the raw output file if saved}
 
 \item{onlySgRes}{logical. If TRUE CoNI output is filtered and only significant results are kept}
 
 \item{multipleTAdj}{logical. If TRUE it will filter results after adjustment of multiple testing}
 
+\item{padjustvertexD}{logical. If TRUE vertexD is filtered according to the significant adjusted p-value of its pairwise correlations}
+
 \item{correlateDFs}{logical. If TRUE the elements that significantly correlate of vertexD are correlated with the elements of edgeD. Only the elements that significantly correlate are kept}
+
+\item{filter_highVarianceEdge}{logical. If TRUE features of edgeD with high variance are filtered out}
 
 \item{splitedgeD}{logical. If TRUE edgeD will be split in n subsets for the computation (some instances n+1). Keep as TRUE unless the data input is small}
 
 \item{split_number}{Number of parts to split the elements of edgeD}
-
-\item{outputDir}{Output Directory where results are stored}
 
 \item{delPrevious}{logical. If TRUE previous files of a previous run are deleted}
 
@@ -58,15 +63,13 @@ CoNI(
 
 \item{verbose}{logical. If TRUE output in the console is more verbose}
 
-\item{filter_highVarianceEdge}{logical. If TRUE features of edgeD with high variance are filtered out}
-
 \item{more_coef}{logical. If TRUE it will include the partial correlation of edge and vertex Features}
 
-\item{saveRaw}{logical. If TRUE the raw output of CoNI is saved in the output directory (outputDir)}
+\item{edgeDname}{File name extension for the edge features that significantly correlate with at least one vertex feature. This file will be read if the function is called again with the same input and with delPrevious=FALSE}
 
-\item{edgeDName}{File name extension for the edge features that significantly correlate with at least one vertex feature. This file will be read if the function is called again with the same input and with delPrevious=FALSE}
+\item{vertexDname}{File name extension for the vertex features that are involved in at least one significant correlation. This file will be read if the function is called again with the same input and with delPrevious=FALSE}
 
-\item{vertexDName}{File name extension for the vertex features that are involved in at least one significant correlation. This file will be read if the function is called again with the same input and with delPrevious=FALSE}
+\item{saveFiles}{logical. If FALSE CoNI function will not save any file to disk}
 }
 \value{
 CoNI returns a table with partial correlation coefficients for every triplet and the pvalue of the Steiger tests
@@ -75,55 +78,40 @@ CoNI returns a table with partial correlation coefficients for every triplet and
 CoNI is the main function of Correlation guided Network Integration (CoNI). Input data should come from two sources (e.g., gene expression and metabolite expression), and it should come from the same samples. It calculates all pairwise correlations of the second data input elements and the partial correlations of these pairwise elements with respect to the elements of the first data input. Both data inputs can be prefiltered to include only those elements that significantly correlate. The first data input can be prefiltered to keep just low variance elements (var<0.5). A modified Steiger test is used to identify significant changes between the correlation and partial correlation values. Results can be visually represented in a Network.
 }
 \examples{
-
 #Run CoNI
 
 #Load gene expression - Toy dataset of two treatments
-data(GeneExp)
+data(GeneExpToy)
 #Samples in rows and genes in columns
-GeneExp <- as.data.frame(t(GeneExp))
+GeneExp <- as.data.frame(t(GeneExpToy))
 hfd_gene <- GeneExp[1:8,] #high fat diet
 chow_gene<- GeneExp[9:nrow(GeneExp),] #chow diet
 #Load metabolite expression - Toy dataset of two treatments
-data(MetaboExp)
+data(MetaboExpToy)
+MetaboExp <- MetaboExpToy
 hfd_metabo <- MetaboExp[11:18,] #high fat diet
 chow_metabo <- MetaboExp[1:10,] #chow diet
 #Match row names both data sets
 rownames(hfd_metabo)<-rownames(hfd_gene)
 rownames(chow_metabo)<-rownames(chow_gene)
-#Run CoNI
+
+#Run CoNI with tiny example and no significance testing
 #High fat diet
-CoNIResultsHFD <- CoNI(hfd_gene,hfd_metabo,
-                   edgeDname="HFD_genes",vertexDname = "HFD_metabolites",
-                   padjustvertexD = FALSE,
-                   split_number = 2,
-                   outputDir = "./HFD/")
-#Chow diet
-CoNIResultsChow <- CoNI(chow_gene,chow_metabo,delPrevious = TRUE,onlySgRes = T,
-                        edgeDname="Chow_genes",vertexDname = "Chow_metabolites",
-                        padjustvertexD = FALSE,splitedgeD = T,split_number = 2,
-                        verbose = T,outputDir = "./Chow/")
+#For big datasets it is recommended to set splitedgeD to TRUE
+#and split_number should be adjusted accordingly
+#See vignette for an example
+#Running CoNI with only a tiny dataset
+ CoNIResultsHFD <- CoNI(hfd_gene[,1:3],hfd_metabo[,1:3],
+                        numCores = 2,
+                        onlySgRes = FALSE,
+                        filter_highVarianceEdge=FALSE,
+                        padjustvertexD = FALSE,
+                        correlateDFs = FALSE,
+                        edgeDname="HFD_genes",
+                        vertexDname = "HFD_metabolites",
+                        saveFiles = FALSE,
+                        splitedgeD = FALSE,
+                        outputDir = "./")
 
-#Note: In order to test the different functions, the results of the toy dataset were not filtered based on significance (onlySgRes = FALSE).
-#For this tiny example nothing remained after filtering based on significance
 
-#Generate Network
-#Load color nodes table
-data(MetColorTable)
-#Generate Network
-HFDNetwork<-generate_network(ResultsCoNI = CoNIResultsHFD,
-                colorNodesTable = MetColorTable,
-                outputDir = "./HFD/",
-                outputFileName = "HFD",
-                saveNetwork = TRUE )
-
-ChowNetwork<-generate_network(ResultsCoNI = CoNIResultsChow,
-                colorVertexTable = MetColorTable,
-                outputDir = "./Chow/",
-                outputFileName = "Chow")
-
-#Find local confounding genes
-#Note: In this tiny example there are no local confounding genes
-LCGenes_BinomialTestTableHFD<- find_localconfoundingFeatures(ResultsCoNI = CoNIResultsHFD,network = HFDNetwork )
-LCGenes_BinomialTestTableChow<- find_localconfoundingFeatures(ResultsCoNI = CoNIResultsChow,network = ChowNetwork )
 }

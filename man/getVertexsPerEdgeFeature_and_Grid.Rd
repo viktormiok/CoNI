@@ -9,8 +9,8 @@ getVertexsPerEdgeFeature_and_Grid(
   Treat1,
   Treat2,
   Annotation,
-  ggrep = T,
   chunks = 3,
+  ggrep = T,
   xlb = "Edge Feature",
   onlyT = FALSE,
   small = FALSE,
@@ -26,13 +26,17 @@ getVertexsPerEdgeFeature_and_Grid(
 
 \item{Annotation}{Data frame that includes the rgb colors for every class. The column 'class' (or 'Class') has to be present and also the column 'ColorRgb'}
 
-\item{ggrep}{logical. If TRUE includes ggrepel labels for every bar}
-
 \item{chunks}{To avoid a non readable dense plot the results can be spitted in multiple plots}
+
+\item{ggrep}{logical. If TRUE includes ggrepel labels for every bar}
 
 \item{xlb}{Change the x-axis label}
 
 \item{onlyT}{logical. If TRUE a table is returned instead of a grid of plots}
+
+\item{small}{logical. If only a few edge features are in the input set as TRUE. A single plot will be created}
+
+\item{...}{Other parameters for inner functions, mainly ggplot2 visual parameters}
 }
 \value{
 Two side-by-side barplots, one for each treatment, showing the number of vertex features per class for every shared edge feature
@@ -41,9 +45,15 @@ Two side-by-side barplots, one for each treatment, showing the number of vertex 
 This function creates a grid of barplots. The barplot of one side depicts the number of class vertex features per edge feature for treatment 1 and the other side the same barplot for treatment 2. Results of both Treatments are side by side for better comparison.
 }
 \examples{
-HFD_vs_Chow_LCP_Gene<-getVertexsPerEdgeFeature_and_Grid(LCP_HFDvsChow,"HFD","Chow",
-                                                        Annotation=MetColorTable,ggrep=F,
-                                                        small = T)
-plot(HFD_vs_Chow_LCP_Gene) #Plot to screen
-ggsave(HFD_vs_Chow_LCP_Gene,file="./HFD_vs_Chow_ClassProfile.svg") #or save it
+data(VertexClassesSharedGenes_HFDvsChow)
+VCSGs<-VertexClassesSharedGenes_HFDvsChow
+data(MetColorTable)
+HFD_vs_Chow_LCP_Gene<-getVertexsPerEdgeFeature_and_Grid(VCSGs,
+                                                        "HFD","Chow",
+                                                        Annotation=MetColorTable,
+                                                        ggrep=FALSE,
+                                                        small = FALSE,
+                                                        chunks = 3,
+                                                        szLegendKey=0.2)
+plot(HFD_vs_Chow_LCP_Gene)
 }

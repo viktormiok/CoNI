@@ -19,6 +19,6 @@ barplot_VertexsPerEdgeFeature(
 )
 }
 \description{
-This function creates a barplot depicting the number of vertex features per class for every edge feature. To use this function one has to split first the file (or not if it is small) with the funciton chunk2
+Internal use. This function creates a barplot depicting the number of vertex features per class for every edge feature. To use this function one has to split first the file (or not if it is small) with the funciton chunk2
 }
 \keyword{internal}

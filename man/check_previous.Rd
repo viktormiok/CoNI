@@ -4,7 +4,7 @@
 \alias{check_previous}
 \title{Check previous files}
 \usage{
-check_previous(del, iteration, outDir, verb = verbose)
+check_previous(del, iteration, outDir, verb)
 }
 \description{
 Internal use. This function checks previous files and deletes according to the User input option

@@ -2,7 +2,7 @@
 % Please edit documentation in R/CoNI_functions.R
 \name{assign_colorsAnnotation}
 \alias{assign_colorsAnnotation}
-\title{AnnotationDf - Assing Colors Class}
+\title{Assing Colors to Class}
 \usage{
 assign_colorsAnnotation(AnnotationDf, col = "Class")
 }

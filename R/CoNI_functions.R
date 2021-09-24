@@ -3,96 +3,89 @@
 #' Correlation guided Network Integration
 #' @description CoNI is the main function of Correlation guided Network Integration (CoNI). Input data should come from two sources (e.g., gene expression and metabolite expression), and it should come from the same samples. It calculates all pairwise correlations of the second data input elements and the partial correlations of these pairwise elements with respect to the elements of the first data input. Both data inputs can be prefiltered to include only those elements that significantly correlate. The first data input can be prefiltered to keep just low variance elements (var<0.5). A modified Steiger test is used to identify significant changes between the correlation and partial correlation values. Results can be visually represented in a Network.
 #' @param edgeD Object to use as first data input (e.g., protein expression)
-#' @param edgeDName File name extension for the edge features that significantly correlate with at least one vertex feature. This file will be read if the function is called again with the same input and with delPrevious=FALSE
 #' @param vertexD Object to use as second data input (e.g., metabolite expression)
-#' @param vertexDName File name extension for the vertex features that are involved in at least one significant correlation. This file will be read if the function is called again with the same input and with delPrevious=FALSE
-#' @param onlySgRes logical. If TRUE CoNI output is filtered and only significant results are kept
-#' @param multipleTAdj logical. If TRUE it will filter results after adjustment of multiple testing
+#' @param outputDir Output Directory where results are stored
 #' @param saveRaw logical. If TRUE the raw output of CoNI is saved in the output directory (outputDir)
 #' @param outputNameRaw Name for the raw output file if saved
+#' @param onlySgRes logical. If TRUE CoNI output is filtered and only significant results are kept
+#' @param multipleTAdj logical. If TRUE it will filter results after adjustment of multiple testing
 #' @param padjustvertexD logical. If TRUE vertexD is filtered according to the significant adjusted p-value of its pairwise correlations
 #' @param correlateDFs logical. If TRUE the elements that significantly correlate of vertexD are correlated with the elements of edgeD. Only the elements that significantly correlate are kept
+#' @param filter_highVarianceEdge logical. If TRUE features of edgeD with high variance are filtered out
 #' @param splitedgeD logical. If TRUE edgeD will be split in n subsets for the computation (some instances n+1). Keep as TRUE unless the data input is small
 #' @param split_number Number of parts to split the elements of edgeD
-#' @param outputDir Output Directory where results are stored
 #' @param delPrevious logical. If TRUE previous files of a previous run are deleted
 #' @param delIntermediaryFiles logical. If TRUE the output file of every iteration is deleted and only a single file with all results is kept
 #' @param iteration_start Iteration start for CoNI. Useful if run is interrupted as one can restart from the last iteration
 #' @param numCores Cores assigned for parallelization
 #' @param verbose logical. If TRUE output in the console is more verbose
-#' @param filter_highVarianceEdge logical. If TRUE features of edgeD with high variance are filtered out
 #' @param more_coef logical. If TRUE it will include the partial correlation of edge and vertex Features
+#' @param edgeDname File name extension for the edge features that significantly correlate with at least one vertex feature. This file will be read if the function is called again with the same input and with delPrevious=FALSE
+#' @param vertexDname File name extension for the vertex features that are involved in at least one significant correlation. This file will be read if the function is called again with the same input and with delPrevious=FALSE
+#' @param saveFiles logical. If FALSE CoNI function will not save any file to disk
 #' @return CoNI returns a table with partial correlation coefficients for every triplet and the pvalue of the Steiger tests
 #' @examples
-#'
 #' #Run CoNI
 #'
 #' #Load gene expression - Toy dataset of two treatments
-#' data(GeneExp)
+#' data(GeneExpToy)
 #' #Samples in rows and genes in columns
-#' GeneExp <- as.data.frame(t(GeneExp))
+#' GeneExp <- as.data.frame(t(GeneExpToy))
 #' hfd_gene <- GeneExp[1:8,] #high fat diet
 #' chow_gene<- GeneExp[9:nrow(GeneExp),] #chow diet
 #' #Load metabolite expression - Toy dataset of two treatments
-#' data(MetaboExp)
+#' data(MetaboExpToy)
+#' MetaboExp <- MetaboExpToy
 #' hfd_metabo <- MetaboExp[11:18,] #high fat diet
 #' chow_metabo <- MetaboExp[1:10,] #chow diet
 #' #Match row names both data sets
 #' rownames(hfd_metabo)<-rownames(hfd_gene)
 #' rownames(chow_metabo)<-rownames(chow_gene)
-#' #Run CoNI
+#'
+#' #Run CoNI with tiny example and no significance testing
 #' #High fat diet
-#' CoNIResultsHFD <- CoNI(hfd_gene,hfd_metabo,
-#'                    edgeDname="HFD_genes",vertexDname = "HFD_metabolites",
-#'                    padjustvertexD = FALSE,
-#'                    split_number = 2,
-#'                    outputDir = "./HFD/")
-#' #Chow diet
-#' CoNIResultsChow <- CoNI(chow_gene,chow_metabo,delPrevious = TRUE,onlySgRes = T,
-#'                         edgeDname="Chow_genes",vertexDname = "Chow_metabolites",
-#'                         padjustvertexD = FALSE,splitedgeD = T,split_number = 2,
-#'                         verbose = T,outputDir = "./Chow/")
-
+#' #For big datasets it is recommended to set splitedgeD to TRUE
+#' #and split_number should be adjusted accordingly
+#' #See vignette for an example
+#' #Running CoNI with only a tiny dataset
+#'  CoNIResultsHFD <- CoNI(hfd_gene[,1:3],hfd_metabo[,1:3],
+#'                         numCores = 2,
+#'                         onlySgRes = FALSE,
+#'                         filter_highVarianceEdge=FALSE,
+#'                         padjustvertexD = FALSE,
+#'                         correlateDFs = FALSE,
+#'                         edgeDname="HFD_genes",
+#'                         vertexDname = "HFD_metabolites",
+#'                         saveFiles = FALSE,
+#'                         splitedgeD = FALSE,
+#'                         outputDir = "./")
 #'
-#' #Note: In order to test the different functions, the results of the toy dataset were not filtered based on significance (onlySgRes = FALSE).
-#' #For this tiny example nothing remained after filtering based on significance
 #'
-#' #Generate Network
-#' #Load color nodes table
-#' data(MetColorTable)
-#' #Generate Network
-#' HFDNetwork<-generate_network(ResultsCoNI = CoNIResultsHFD,
-#'                 colorNodesTable = MetColorTable,
-#'                 outputDir = "./HFD/",
-#'                 outputFileName = "HFD",
-#'                 saveNetwork = TRUE )
-#'
-#' ChowNetwork<-generate_network(ResultsCoNI = CoNIResultsChow,
-#'                 colorVertexTable = MetColorTable,
-#'                 outputDir = "./Chow/",
-#'                 outputFileName = "Chow")
-#'
-#' #Find local confounding genes
-#' #Note: In this tiny example there are no local confounding genes
-#' LCGenes_BinomialTestTableHFD<- find_localconfoundingFeatures(ResultsCoNI = CoNIResultsHFD,network = HFDNetwork )
-#' LCGenes_BinomialTestTableChow<- find_localconfoundingFeatures(ResultsCoNI = CoNIResultsChow,network = ChowNetwork )
-#' @import doSNOW
+#' @import doParallel
 #' @import parallel
 #' @import foreach
 #' @import dplyr
 #' @import ppcor
 #' @import cocor
+#' @importFrom data.table fwrite fread
+#' @importFrom stats cor p.adjust
+#' @importFrom utils write.csv
 #' @export
 CoNI<- function(edgeD, vertexD,
-                outputNameRaw="CoNIOutput",edgeDname="edgeD",
-                vertexDname="vertexD",padjustvertexD=TRUE,
-                onlySgRes=FALSE,multipleTAdj=TRUE,correlateDFs=TRUE,splitedgeD=TRUE,
-                split_number=2,outputDir="./CoNIOutput/",
-                delPrevious=FALSE,delIntermediaryFiles=TRUE,
-                iteration_start=1,numCores=NULL,
-                verbose=TRUE,filter_highVarianceEdge=TRUE,
-                more_coef=FALSE,saveRaw=TRUE) {
+                outputDir = "./CoNIOutput/",
+                saveRaw = TRUE, outputNameRaw = "CoNIOutput",
+                onlySgRes = FALSE, multipleTAdj = TRUE,
+                padjustvertexD = TRUE, correlateDFs=TRUE,
+                filter_highVarianceEdge = TRUE,
+                splitedgeD = TRUE, split_number = 2,
+                delPrevious = FALSE, delIntermediaryFiles = TRUE,
+                iteration_start = 1, numCores = NULL,
+                verbose = TRUE,
+                more_coef=FALSE,
+                edgeDname = "edgeD",vertexDname = "vertexD",
+                saveFiles=TRUE) {
 
+  j <- NULL
   #Set delPrevious to FALSE if iteration start > 1
   if(iteration_start>1){
     if(verbose){cat('Iteration start > 1')}
@@ -136,14 +129,16 @@ CoNI<- function(edgeD, vertexD,
   if(!file.exists(paste(outputDir,"KeptFeatures_",vertexDname,".csv",sep=""))){
     #Get significant correlations between metabolites
     if(verbose){print("Calculating correlations of vertex Data")}
-    normvertexD_Tablesignificant<-sig_correlation2(input_edgeD = vertexD,padj = padjustvertexD,verb = verbose)
+    normvertexD_Tablesignificant <- sig_correlation2(input_edgeD = vertexD,padj = padjustvertexD,verb = verbose)
     #Get indexes for the rows and columns for the metabo data
-    normvertexD_Tablesignificant$RowIndex<-apply(normvertexD_Tablesignificant,1,function(x){return(which(colnames(vertexD)[1:ncol(vertexD)]==x[1]))})
-    normvertexD_Tablesignificant$ColIndex<-apply(normvertexD_Tablesignificant,1,function(x){return(which(colnames(vertexD)[1:ncol(vertexD)]==x[2]))})
-    data.table::fwrite(normvertexD_Tablesignificant,paste(outputDir,"KeptFeatures_",vertexDname,".csv",sep=""))
-    normvertexD_Tablesignificant<-data.table::fread(paste(outputDir,"KeptFeatures_",vertexDname,".csv",sep=""))
+    normvertexD_Tablesignificant$RowIndex <- apply(normvertexD_Tablesignificant,1,function(x){return(which(colnames(vertexD)[1:ncol(vertexD)]==x[1]))})
+    normvertexD_Tablesignificant$ColIndex <- apply(normvertexD_Tablesignificant,1,function(x){return(which(colnames(vertexD)[1:ncol(vertexD)]==x[2]))})
+    if(saveFiles){
+      fwrite(normvertexD_Tablesignificant,paste(outputDir,"KeptFeatures_",vertexDname,".csv",sep=""))
+      normvertexD_Tablesignificant <- fread(paste(outputDir,"KeptFeatures_",vertexDname,".csv",sep=""))
+    }
   }else{
-    normvertexD_Tablesignificant<-data.table::fread(paste(outputDir,"KeptFeatures_",vertexDname,".csv",sep=""))
+    normvertexD_Tablesignificant <- fread(paste(outputDir,"KeptFeatures_",vertexDname,".csv",sep=""))
   }
 
   #Get low variance edge features (e.g. genes)
@@ -170,10 +165,12 @@ CoNI<- function(edgeD, vertexD,
     genesSig <- unique(ResultsCorDfs$gene)
     if(verbose){print(paste(length(genesSig),"features were kept from edge Data",sep=" "))}
     edgeD <- edgeD[,genesSig]
-    data.table::fwrite(edgeD,paste(outputDir,"KeptFeatures_",edgeDname,".csv",sep=""))
-    edgeD<-data.table::fread(paste(outputDir,"KeptFeatures_",edgeDname,".csv",sep=""))
+    if(saveFiles){
+      fwrite(edgeD,paste(outputDir,"KeptFeatures_",edgeDname,".csv",sep=""))
+      edgeD <- fread(paste(outputDir,"KeptFeatures_",edgeDname,".csv",sep=""))
+    }
   }else if(file.exists(paste(outputDir,"KeptFeatures_",edgeDname,".csv",sep=""))){
-    edgeD<-data.table::fread(paste(outputDir,"KeptFeatures_",edgeDname,".csv",sep=""))
+    edgeD <- fread(paste(outputDir,"KeptFeatures_",edgeDname,".csv",sep=""))
   }
 
   if(ncol(edgeD)>2000){
@@ -198,7 +195,6 @@ CoNI<- function(edgeD, vertexD,
   #Split Data Frame
   if(splitedgeD){
 
-
     ls_dfs<-split_df(edgeD,split_number)
     print(paste("Edge Data was split into",length(ls_dfs),"parts",sep=" "))
 
@@ -212,26 +208,31 @@ CoNI<- function(edgeD, vertexD,
 
 
       #Register parallel backend
-      #library(doSNOW)
-      if(is.null(numCores)){
+      chk <- Sys.getenv("_R_CHECK_LIMIT_CORES_", "")
+      if (nzchar(chk) && chk == "TRUE") {
+        # use 2 cores in CRAN/Travis/AppVeyor
+        numCores <- 2
+        if(verbose){cat("Running parallelization with ",numCores," cores\n",sep="")}
+      }else if(is.null(numCores)){
         numCores<-detectCores()-2
         if(verbose){cat("Running parallelization with ",numCores," cores\n",sep="")}
       }else{
         if(verbose){cat("Running parallelization with ",numCores," cores\n",sep="")}
       }
 
+
       if(verbose){print(paste('Running CoNI Split Number',i,sep=" "))}
 
       cl<-makeCluster(numCores,setup_timeout = 0.5)
-      registerDoSNOW(cl)
-      #registerDoParallel(numCores)
+      #registerDoSNOW(cl)
+      registerDoParallel(cl)
 
       #Set progress bar
       # pb<-tkProgressBar(max=ncol(edgeD))
 
       #Run operations in parallel
-      df_results = foreach(j = 1:ncol(df_iter), .packages = c("ppcor", "doParallel","cocor","progress") , .combine=rbind,.inorder = FALSE) %dopar% { #Loop table significant metabolites %dopar% .options.snow=taskBar1(pb,ncol(edgeD))
-        results2 =foreach(i = 1:nrow(normvertexD_Tablesignificant),.packages = c("ppcor", "doParallel","cocor") , .combine=rbind,.verbose = FALSE,.inorder = FALSE) %dopar% { #Loop genes
+      df_results = foreach(j = 1:ncol(df_iter), .packages = c("ppcor", "doParallel","cocor") , .combine=rbind,.inorder = FALSE) %dopar% { #Loop table significant metabolites %dopar% .options.snow=taskBar1(pb,ncol(edgeD))
+        results2 =foreach(i = 1:nrow(normvertexD_Tablesignificant),.packages = c("ppcor", "doParallel","cocor"), .combine=rbind,.inorder = FALSE) %dopar% { #Loop genes
 
           index1<-normvertexD_Tablesignificant[i,6]#Index column of first vertex feature (e.g. metabolite)
           index2<-normvertexD_Tablesignificant[i,7]#Index column of second vertex feature (e.g. metabolite)
@@ -262,11 +263,6 @@ CoNI<- function(edgeD, vertexD,
           cor_m1_vs_g <- cor(vertexD[,index1],df_iter[,j])
           cor_m2_vs_g <- cor(vertexD[,index2],df_iter[,j])
 
-          #Test if partial correlation coefficient differs from correlation coefficient
-          #j=vertex feature 1 (e.g. metabolite1)
-          #k=vertex feature 1 (e.g.metabolite2)
-          #h=edge feature (e.g. gene)
-
           #Steiger test
           cdgo <- cocor.dep.groups.overlap(r.jk=cor_coefficient[[1]], r.jh=pcor_coefficient, r.kh=cor_m1_vs_g[1], n=nrow(vertexD),
                                            alternative="two.sided", alpha=0.05, conf.level=0.95, null.value=0, test='steiger1980')
@@ -290,7 +286,7 @@ CoNI<- function(edgeD, vertexD,
               return('NA')
             }
           )
-          if(is.na(pcor_res_jh_k)){
+          if(is.na(pcor_res_jh_k[[1]])){
             pcor_res_jh_kCoef<-"NA"
             pcor_res_jh_kpval<-"NA"
           }else{
@@ -309,7 +305,7 @@ CoNI<- function(edgeD, vertexD,
                      return('NA')
                    }
           )
-          if(is.na(pcor_res_kh_j)){
+          if(is.na(pcor_res_kh_j[[1]])){
             pcor_res_kh_jCoef<-"NA"
             pcor_res_kh_jpval<-"NA"
           }else{
@@ -373,21 +369,22 @@ CoNI<- function(edgeD, vertexD,
     #Add adjusted steiger pvalue
     CoNIOutput$cdgo_adjusted<-p.adjust(CoNIOutput$cdgo_pvalue)
     CoNIOutput$cdgo2_adjusted<-p.adjust(CoNIOutput$cdgo2_pvalue)
+    CoNIOutput<-as.data.frame(CoNIOutput)
 
     if(!more_coef){
       CoNIOutput<-CoNIOutput[,c(1:9,14:length(CoNIOutput))]
     }
 
     #Save raw results
-    if(saveRaw){
-      suppressMessages(data.table::fwrite(CoNIOutput, paste(outputDir,outputNameRaw,"_Raw",".gz",sep=""),nThread=numCores))
+    if(saveFiles & saveRaw){
+      suppressMessages(fwrite(CoNIOutput, paste(outputDir,outputNameRaw,"_Raw",".gz",sep=""),nThread=numCores))
     }
 
     #Keep only significant results
     if(onlySgRes && multipleTAdj){ #adjustment for multiple testing
-      CoNIOutput<-CoNIOutput %>% filter(cor_pvalue<=0.05) %>% filter(cdgo_adjusted<=0.05 & cdgo2_adjusted<=0.05)
+      CoNIOutput<-CoNIOutput %>% filter(cor_pvalue<=0.05) %>% filter(.data$cdgo_adjusted<=0.05 & .data$cdgo2_adjusted<=0.05)
     }else if(onlySgRes){ #without adjustment for multiple testing
-      CoNIOutput<-CoNIOutput %>% filter(cor_pvalue<=0.05) %>% filter(cdgo_pvalue<=0.05 & cdgo2_pvalue<=0.05)
+      CoNIOutput<-CoNIOutput %>% filter(cor_pvalue<=0.05) %>% filter(.data$cdgo_pvalue<=0.05 & .data$cdgo2_pvalue<=0.05)
     }
 
     #Delete intermediary files
@@ -407,7 +404,12 @@ CoNI<- function(edgeD, vertexD,
 
   if (splitedgeD==FALSE){
     #Register parallel backend
-    if(is.null(numCores)){
+    chk <- Sys.getenv("_R_CHECK_LIMIT_CORES_", "")
+    if (nzchar(chk) && chk == "TRUE") {
+      # use 2 cores in CRAN/Travis/AppVeyor
+      numCores <- 2
+      if(verbose){cat("Running parallelization with ",numCores," cores\n",sep="")}
+    }else if(is.null(numCores)){
       numCores<-detectCores()-2
       if(verbose){cat("Running parallelization with ",numCores," cores\n",sep="")}
     }else{
@@ -415,12 +417,17 @@ CoNI<- function(edgeD, vertexD,
     }
 
     cl<-makeCluster(numCores)
-    registerDoSNOW(cl)
+    #registerDoSNOW(cl)
+    registerDoParallel(cl)
 
     print('Running CoNI...')
 
     #Set progress bar
     # pb<-tkProgressBar(max=ncol(edgeD))
+
+    #Convert to data.frames
+    edgeD<-as.data.frame(edgeD)
+    normvertexD_Tablesignificant<-as.data.frame(normvertexD_Tablesignificant)
 
     df_results = foreach(j = 1:ncol(edgeD),.packages = c("ppcor", "doParallel","cocor"), .combine=rbind,.inorder = FALSE) %dopar% {#Loop genes .options.snow=taskBar1(pb,ncol(edgeD))
       results2 = foreach(i = 1:nrow(normvertexD_Tablesignificant),.packages = c("ppcor", "doParallel","cocor") ,.combine=rbind,.inorder = FALSE) %dopar% {#Loop table significant metabolites
@@ -479,7 +486,7 @@ CoNI<- function(edgeD, vertexD,
                                     return('NA')
                                   }
         )
-        if(is.na(pcor_res_jh_k)){
+        if(is.na(pcor_res_jh_k[[1]])){
           pcor_res_jh_kCoef<-"NA"
           pcor_res_jh_kpval<-"NA"
         }else{
@@ -497,7 +504,7 @@ CoNI<- function(edgeD, vertexD,
                                   return('NA')
                                 }
         )
-        if(is.na(pcor_res_kh_j)){
+        if(is.na(pcor_res_kh_j[[1]])){
           pcor_res_kh_jCoef<-"NA"
           pcor_res_kh_jpval<-"NA"
         }else{
@@ -520,14 +527,14 @@ CoNI<- function(edgeD, vertexD,
 
     #Remove weird format
     df_results<-as.data.frame(df_results)
-    df_results<-sapply(df_results[,1:ncol(df_results)],function(x){
-        x<-unlist(x)})
-    df_results<-as.data.frame(df_results)
-
-    #Set numeric columns as numeric
-    df_results[,4:13]<-sapply(df_results[, 4:13], function(x){
-      as.numeric(as.character(x))
-    })
+    # df_results<-sapply(df_results[,1:ncol(df_results)],function(x){
+    #     x<-unlist(x)})
+    # df_results<-as.data.frame(df_results)
+    #
+    # #Set numeric columns as numeric
+    # df_results[,4:13]<-sapply(df_results[, 4:13], function(x){
+    #   as.numeric(as.character(x))
+    # })
 
 
     #Set column names
@@ -542,9 +549,9 @@ CoNI<- function(edgeD, vertexD,
     df_results$cdgo2_adjusted<-p.adjust(df_results$cdgo2_pvalue)
 
     #Save result to memory
-    if(saveRaw){
+    if(saveFiles & saveRaw){
       df_results_raw<-as.matrix(df_results)
-      suppressMessages(data.table::fwrite(df_results_raw, paste(outputDir,outputNameRaw,"_Raw",".gz",sep=""),nThread=numCores,quote = TRUE))
+      suppressMessages(fwrite(df_results_raw, paste(outputDir,outputNameRaw,"_Raw",".gz",sep=""),nThread=numCores,quote = TRUE))
     }
 
     if(!more_coef){
@@ -553,7 +560,7 @@ CoNI<- function(edgeD, vertexD,
 
     #Filter significance
     if(onlySgRes){
-      df_results<-df_results %>% filter(cor_pvalue<=0.05) %>% filter(cdgo_adjusted<=0.05 & cdgo2_adjusted<=0.05)
+      df_results<-df_results %>% filter(cor_pvalue<=0.05) %>% filter(.data$cdgo_adjusted<=0.05 & .data$cdgo2_adjusted<=0.05)
     }
 
 
@@ -567,76 +574,10 @@ CoNI<- function(edgeD, vertexD,
 
 }
 
-#' Robustness function
-#' @description This function takes as input the corresponding vertex Data and edge Data. Sample names for both datasets should match (samples are in the rows). User has to provide the number of samples that will be excluded (1,2, or n samples). Function will iteratively exclude all combinations for the number provided. Default value is 2. For very big datasets might fail.
-#' @keywords experimental
-#' It uses the same parameters as CoNI plus an extra parameter "no_samplesOut", that specifies the number of samples that will be excluded. It requires a lot of time to run if not enough computer power is available.
-all_combinationsCoNI<-function(vertexD,edgeD,no_samplesOut=2,edgeDname="edgeD",vertexDname="vertexD",outputName="CoNIOutput",outputDir="./CoNIOutput",padjustvertexD=TRUE,correlateDFs=TRUE,splitedgeD=TRUE,split_number=2,delPrevious=FALSE,delIntermediaryFiles=TRUE){
-  #Get all possible combinations
-  combinations<-combn(c(1:nrow(vertexD)),no_samplesOut)
-
-  for(i in 1:ncol(combinations)){
-    #Get index of pair to exclude
-    index<-combinations[,i]
-
-    #Remove selected rows from vertex data
-    lData<-vertexD[-index,]
-    lData <- as.data.frame(lData)
-
-    #Remove selected rows from drive data
-    dData<-edgeD[-index,]
-
-    #Test if sample names are the same in both data sets
-    compare_sampleNames(dData,lData)
-
-
-    CoNIResults_Chow<-CoNI(edgeD = dData,vertexD = lData,
-                           edgeDname=paste0(edgeDname,paste(combinations[,i],collapse = 'and',sep="")),
-                           vertexDname = paste0(vertexDname,paste(combinations[,i],collapse = 'and',sep="")),
-                           padjustvertexD = padjustvertexD, split_number = split_number,
-                           correlateDFs=correlateDFs,
-                           delPrevious = delPrevious,
-                           delIntermediaryFiles = delIntermediaryFiles,
-                           outputDir = paste0(outputDir,paste(combinations[,i],collapse = 'and',sep=""),"/"),
-                           outputName = paste0(outputName,paste(combinations[,i],collapse = 'and',sep="")),
-                           splitedgeD = splitedgeD)}}
-
-#' Function to process all combinations
-#' #' @keywords experimental
-all_combinationsProcessing<-function(edgeD, vertexD, no_samplesOut=2,colorNodesTable,outputName="CoNIOutput",outputDir="./CoNIOutput"){
-  #Get all possible combinations
-  combinations<-combn(c(1:nrow(edgeD)),no_samplesOut)
-
-  for(i in 1:ncol(combinations)){
-    outputFolder<-paste0(outputDir,paste(combinations[,i],collapse = 'and',sep=""),"/")
-    #Get file name
-    file_name<-paste0(outputFolder,outputName,paste(combinations[,i],collapse = 'and',sep=""),".csv")
-    #Read File name
-    CoNI_Iter<-fread(file_name)
-    #Add adjusted pvalue
-    CoNI_Iter$cdgo_adjusted<-p.adjust(CoNI_Iter$cdgo_pvalue)
-    CoNI_Iter$cdgo2_adjusted<-p.adjust(CoNI_Iter$cdgo2_pvalue)
-    #Filter based on Pvalue
-    CoNI_Iter<- subset(CoNI_Iter,cdgo_adjusted<0.05 & cdgo2_adjusted<0.05)
-    fwrite(CoNI_Iter,paste0(outputFolder,outputName,"_SteigerFiltered_no",paste(combinations[,i],collapse = 'and',sep=""),".csv"))
-
-    ##############
-    #CreateNetwork
-    ChowNetwork_Iter<-generate_network(CoNI_Iter, colorNodesTable,outputDir = outputFolder,outputFileName =paste(combinations[,i],collapse = 'and',sep=""))
-    write.graph(ChowNetwork_Iter,file=paste0(outputFolder,"Chow_SteigerFiltered_no",paste(combinations[,i],collapse = 'and',sep=""),".graphml"),format="graphml")
-
-    #Find local confounding edge features
-    LRGenesTable_CoNI_Iter <- find_localConfoundingFeatures(ResultsCoNI = CoNI_Iter,network = ChowNetwork_Iter )
-    LRGenes_CoNI_Iter <- as.vector(unique(LRGenesTable_CoNI_Iter$Var1))
-    write.csv(LRGenesTable_CoNI_Iter,paste0(outputFolder,"Chow_LCGenesTable",paste(combinations[,i],collapse = 'and',sep=""),".csv"))
-    write.csv(LRGenes_CoNI_Iter,paste0(outputFolder,"Chow_LCGenes",paste(combinations[,i],collapse = 'and',sep=""),".csv"))
-  }
-  print('End')
-}
-
 #' Check input parameters
 #' @description Internal use. Function  to check if input parameters are of the right class
 #' @keywords internal
+#' @importFrom methods is
 checkInputParameters<-function(ParaList){
   #Functions used
   matchLs<-function(L1,L2){
@@ -651,11 +592,15 @@ checkInputParameters<-function(ParaList){
 
   if(length(ParamPathL)>0){
     param<-eval(ParamPathL[[1]])
-    LPathParts<-strsplit(param,split = "/")[[1]]
-    LPathParts<-LPathParts[-length(LPathParts)]
-    Path<-paste(LPathParts,collapse="/")
-    if(!dir.exists(Path)){
-      stop("Path provided for the new directoy does not exist")
+    if(param=="./"){
+      print("Output in working directory")
+    }else{
+      LPathParts<-strsplit(param,split = "/")[[1]]
+      LPathParts<-LPathParts[-length(LPathParts)]
+      Path<-paste(LPathParts,collapse="/")
+      if(!dir.exists(Path)){
+        stop("Path provided for the new directoy does not exist")
+      }
     }
   }
 
@@ -720,10 +665,11 @@ checkInputParameters<-function(ParaList){
 #' Write table
 #' @description Internal use. This function tries to write a table with fread, if it fails it returns "NA"
 #' @keywords internal
+#' @importFrom data.table fwrite
 writeTable <- function(results_write,num_cores,outputDir,iteration) {
   out <- tryCatch(
     {
-      suppressMessages(data.table::fwrite(results_write, paste(outputDir,"CoNIOutputSplit",iteration,".csv",sep=""),nThread=num_cores))
+      suppressMessages(fwrite(results_write, paste(outputDir,"CoNIOutputSplit",iteration,".csv",sep=""),nThread=num_cores))
     },
     error=function(cond) {
       message('fwrite failed')
@@ -740,7 +686,7 @@ writeTable <- function(results_write,num_cores,outputDir,iteration) {
 #' @description Internal use. This function checks previous files and deletes according to the User input option
 #' Requires some modifications...
 #' @keywords internal
-check_previous<-function(del,iteration,outDir,verb=verbose){
+check_previous<-function(del,iteration,outDir,verb){
   if(del){
     filesDel<-unique(c(list.files(outDir,pattern = "^CoNIOutput"),list.files(outDir,pattern = "^.*_Raw")))
     if(length(filesDel)>0){
@@ -775,23 +721,11 @@ delIntFiles<-function(del,outDir){
 
 }
 
-#' Is NA or NAN
-#' @description Internal use. This function tests if the result of a calculation is NA or NAN
-#' @keywords internal
-isNA_NAN<-function(result){
-  if(is.na(result)|is.nan(result)){
-    an<- TRUE
-  }else{
-    an <- FALSE
-  }
-  an
-}
-
 #' Check if files exist
 #' @description Internal use. This function tests if the input files exist, if they do not it will output an error and
 #' end CoNI
 #' @keywords internal
-do_objectsExist<-function(gene_exp,norm_metabo_dat,verb=verbose){
+do_objectsExist<-function(gene_exp,norm_metabo_dat,verb){
   if(missing(gene_exp) | missing(norm_metabo_dat)){
     message("Input objects are missing")
     stop("CoNI end")
@@ -889,20 +823,20 @@ flattenCorrMatrix <- function(cormat, pmat) {
 #' @description Internal use. This function calculates the pairwise correlations of a matrix (it uses Hmisc::rcorr function) and gets the significant correlations
 #' @keywords internal
 #' @importFrom Hmisc rcorr
-sig_correlation2<-function(input_edgeD,padj=TRUE,method="BH", verb=verbose){
+sig_correlation2<-function(input_edgeD,padj=TRUE,method="BH", verb){
   corr<-rcorr(as.matrix(input_edgeD),type='p')
   corr_table<-flattenCorrMatrix(corr$r,corr$P)
   corr_table$adj.p<-p.adjust(corr_table$p,method = method)
 
   if(padj){
-    corr_tableSig <- corr_table %>% filter(adj.p<0.05)
+    corr_tableSig <- corr_table %>% filter(.data$adj.p<0.05)
     if(nrow(corr_tableSig) == 0){
       print('No features significantly correlate after padjustment for vertexD')
       print('Using non adjusted pvalues')
-      corr_tableSig<-corr_table %>% filter(p<0.05)}
+      corr_tableSig<-corr_table %>% filter(.data$p<0.05)}
   }else{
     print("Ajustment for multiple testing was set to FALSE for correlations in vertex Data")
-    corr_tableSig<-corr_table %>% filter(p<0.05)
+    corr_tableSig<-corr_table %>% filter(.data$p<0.05)
   }
   if(verb){print(paste('Significant correlations',nrow(corr_tableSig),sep=" "))}
   corr_tableSig
@@ -911,6 +845,7 @@ sig_correlation2<-function(input_edgeD,padj=TRUE,method="BH", verb=verbose){
 #' Significant correlations 2 Df
 #' @description Internal use. This function input are two data frames (e.g. metabolites and genes). It calculates the correlation matrix and creates a table with only significant pairs. No correction for multiple testing is done
 #' @keywords internal
+#' @importFrom stats pt
 sig_correlation2Dfs<-function(metabolite_data,gene_expression){
   n <- t(!is.na(metabolite_data)) %*% (!is.na(gene_expression)) # same as count.pairwise(x,y) from psych package/ Matches number of samples
   r <- cor(metabolite_data, gene_expression, use = "pairwise.complete.obs") # MUCH MUCH faster than corr.test()
@@ -958,6 +893,7 @@ sig_correlation2Dfs<-function(metabolite_data,gene_expression){
 #' @importFrom genefilter rowVars
 #' @keywords internal
 get_lowvarFeatures<-function(df){
+  Var<-NULL
   df<-as.data.frame(t(df))
   df$Var<-genefilter::rowVars(as.matrix(df))
   df<-subset(df,Var<0.5)
@@ -966,8 +902,9 @@ get_lowvarFeatures<-function(df){
 }
 
 #' Merge Files.
-#' @description This function reads the output split files generated by CoNI and generates a single result object. It is slow. Probably there are other faster alternatives.
+#' @description Internal use. This function reads the output split files generated by CoNI and generates a single result object. It is slow. Probably there are other faster alternatives.
 #' @keywords internal
+#' @importFrom data.table fread
 merge_outpuSplitFiles<-function(outputDir){
   #outputDir<-gsub('\\.','',outputDir)
   #outputDir<-gsub('\\/','',outputDir)
@@ -976,9 +913,9 @@ merge_outpuSplitFiles<-function(outputDir){
   for (file in file_list){
     # if the merged dataset doesn't exist, create it
     if (!exists("datasetResultsCoNI")){
-      datasetResultsCoNI <- data.table::fread(paste(outputDir,file,sep=""), header=TRUE, sep=",")
+      datasetResultsCoNI <- fread(paste(outputDir,file,sep=""), header=TRUE, sep=",")
     }else{
-      temp_dataset <-data.table::fread(paste(outputDir,file,sep=""), header=TRUE, sep=",")
+      temp_dataset <- fread(paste(outputDir,file,sep=""), header=TRUE, sep=",")
       datasetResultsCoNI<-rbind(datasetResultsCoNI, temp_dataset)
       rm(temp_dataset)
     }
@@ -987,9 +924,9 @@ merge_outpuSplitFiles<-function(outputDir){
 }
 
 #' Output directory
-#' @description This function checks if the output directory exists and if it does not, it will create it
+#' @description Internal use. This function checks if the output directory exists and if it does not, it will create it
 #' @keywords internal
-check_outputDir<-function(outputDir,verb=verbose){
+check_outputDir<-function(outputDir,verb){
   if (file.exists(paste(outputDir,sep=""))) {
     if(verb){print("Output directory exists")}
   } else {
@@ -999,71 +936,44 @@ check_outputDir<-function(outputDir,verb=verbose){
 }
 
 #' Create network
-#' @description This function creates a network using as input the output of CoNI and a table specifying the colors for the nodes (first column are node names)
-#' @param ResultsCoNI Output of CoNI
-#' @keywords internal not used
-generate_network_2<-function(ResultsCoNI, colorNodesTable){
-  results_SteigerAdjust <- ResultsCoNI[,1:3] #Get pair metabolites and gene
-
-  #Summarize results for network construction
-  df <- plyr::ddply(results_SteigerAdjust,c(1,2),plyr::summarize,
-              Genes=length(Feature_edgeD),
-              GenesString=paste0(unique(Feature_edgeD),collapse=";"))
-  colnames(df) <- c("from","to","weight","Genes")
-  clinksd <- df
-  clinksd$type <- "hyperlink"
-  clinksd$width <- clinksd$weight/max(clinksd$weight) #Calculate a width based on the maximum number of genes per connection
-  cnodes <- data.frame("Name"=unique(c(as.character(df$from),as.character(df$to))),stringsAsFactors=F)#Get the nodes (metabolites)
-  #Assign colors to nodes
-  m <- merge(cnodes,colorNodesTable,by.x="Name",by.y=colnames(colorNodesTable)[1],all.x=T)
-
-  cnodesd <- m
-  #Change column names
-  colnames(clinksd)[3] <- "weightreal"
-  colnames(clinksd)[6] <- "weight"
-
-  #Create graph
-  netd <- igraph::graph_from_data_frame(d=clinksd, vertices=cnodesd, directed=F)
-  netdhfd <- igraph::simplify(netd,remove.multiple=F)
-
-  netdhfd
-}
-
-#' Get variable name
-#' @keywords internal
-get_variableName <- function(variable) {
-  deparse(substitute(variable))
-}
-
-#' Create network
 #' @description This function creates a network using as input the output of CoNI and a table specifying the colors for the nodes.
 #' @param ResultsCoNI The input of the function are the results of CoNI.
-#' @param ColorVertexNetwork logical. If TRUE, the table colorVertexTable has to be provided to specify vertex colors
+#' @param colorVertexNetwork logical. If TRUE, the table colorVertexTable has to be provided to specify vertex colors
 #' @param colorVertexTable Table specifying the colors for the nodes (vertex features). The first column should contain the names matching the features of the vertex Data and the colors or other data can be specified in the rest of the columns
 #' @param outputDir Output directory where the network is saved as well as the file that was used to generate the network.
 #' @param outputFileName The name of the file used to create the network.
 #' @param Class Optional data frame with at least two columns, first column contains all vertex features and another column the vertex feature class (column named "Class"). Necessary for treatment comparisons based on class
+#' @param saveFiles logical. If FALSE TableForNetwork_`outputFileName`.csv and Network_`outputFileName`.graphml are not saved to disk
 #' @importFrom plyr ddply
-#' @import igraph
+#' @importFrom igraph graph_from_data_frame simplify V E degree hub_score transitivity closeness betweenness eigen_centrality centr_betw centr_clo centr_degree edge_betweenness write_graph
 #' @return This function returns a network (igraph object) constructed from CoNI output. Basic network statistics are included in the network
 #' @examples
 #' #Generate Network
 #'
 #' #Load color nodes table
 #' data(MetColorTable)
-#'
-#' #Alternatively assign the colors automatically for every vertex feature according to a "Class" column using the function 'assign_colorsAnnotation'
-#' MetColorTable<-MetColorTable[,-c(3,4)]#Remove the colors assigned previously
-#' MetColorTable<-assign_colorsAnnotation(MetColorTable)#assign colors according to "Class" column
+#' #Assign colors according to "Class" column
+#' MetColorTable<-assign_colorsAnnotation(MetColorTable)
+#' #Load CoNI results
+#' data(CoNIResultsHFDToy)
 #'
 #' #Generate Network
-#' HFDNetwork<-generate_network(ResultsCoNI = CoNIResults,
-#'                             colorNodesTable = MetColorTable,
-#'                             outputDir = "./HFD/",
-#'                             outputFileName = "HFD")
+#' HFDNetwork<-generate_network(ResultsCoNI = CoNIResultsHFDToy,
+#'                              colorVertexNetwork = TRUE,
+#'                              colorVertexTable = MetColorTable,
+#'                              outputDir = "./",
+#'                              outputFileName = "HFD",
+#'                              saveFiles = FALSE)
 #' @export
-generate_network<-function(ResultsCoNI, ColorVertexNetwork=TRUE,colorVertexTable,outputDir="./",
-                           outputFileName="ResultsCoNI",Class=NULL){
+generate_network<-function(ResultsCoNI,
+                           colorVertexNetwork = TRUE,
+                           colorVertexTable,
+                           outputDir = "./", outputFileName="ResultsCoNI",
+                           Class=NULL,
+                           saveFiles = TRUE){
+  Feature_edgeD <-pcor_coefficient <- cor_coefficient <- NULL
+  pcor_LF1_edge__LF2 <-pcor_pvalue_LF1_edge__LF2 <-pcor_LF2_edge__LF1 <- pcor_pvalue_LF2_edge__LF1 <- NULL
+
   saveNetwork=TRUE
   #results_SteigerAdjust<-ResultsCoNI
   if(ncol(ResultsCoNI)>11){
@@ -1074,7 +984,7 @@ generate_network<-function(ResultsCoNI, ColorVertexNetwork=TRUE,colorVertexTable
 
    #Get pair metabolites, gene and pcor and cor information... change to add more information
   #Summarize results for network construction
-  df<-plyr::ddply(results_SteigerAdjust,c(1,2),plyr::summarize,
+  df<-ddply(results_SteigerAdjust,c(1,2),plyr::summarize,
             weightreal=length(Feature_edgeD),
             Genes=paste0(unique(Feature_edgeD),collapse=";"),
             #ActualGeneNames=paste0(unique(ActualGeneName),collapse=";"),
@@ -1084,7 +994,7 @@ generate_network<-function(ResultsCoNI, ColorVertexNetwork=TRUE,colorVertexTable
             CorAverage=mean(cor_coefficient)
             )
   if(ncol(ResultsCoNI)>11){
-    df_2<-plyr::ddply(results_SteigerAdjust,c(1,2),plyr::summarize,
+    df_2<-ddply(results_SteigerAdjust,c(1,2),plyr::summarize,
                       PcorLink1edge=paste0(pcor_LF1_edge__LF2,collapse=";"),
                       PcorLink1edge_pvalue=paste0(pcor_pvalue_LF1_edge__LF2,collapse=";"),
                       PcorLink2edge=paste0(pcor_LF2_edge__LF1,collapse=";"),
@@ -1109,11 +1019,13 @@ generate_network<-function(ResultsCoNI, ColorVertexNetwork=TRUE,colorVertexTable
     clinksd$Vertex1_Class<-Class[match(clinksd$from,make.names(Class[,1])),idxClass] #make.names is necessary as the results files returns make.names feature names
     clinksd$Vertex2_Class<-Class[match(clinksd$to,make.names(Class[,1])),idxClass]
   }
-  write.csv(clinksd,paste(outputDir,"TableForNetwork_",outputFileName,".csv",sep=""),row.names=FALSE)
+  if(saveFiles){
+    write.csv(clinksd,paste(outputDir,"TableForNetwork_",outputFileName,".csv",sep=""),row.names=FALSE)
+  }
 
   cnodes <- data.frame("Name"=unique(c(as.character(df$from),as.character(df$to))),stringsAsFactors=F)#Get the nodes (metabolites)
 
-  if(ColorVertexNetwork){
+  if(colorVertexNetwork){
     #Assign colors to nodes
     m <- merge(cnodes,colorVertexTable,by.x="Name",by.y=colnames(colorVertexTable)[1],all.x=T)
     cnodesd <- m
@@ -1129,35 +1041,65 @@ generate_network<-function(ResultsCoNI, ColorVertexNetwork=TRUE,colorVertexTable
   netd_simple <- igraph::simplify(netd,remove.multiple=F)
 
   #Add network statistics
-  V(netd_simple)$degree<-degree(netd_simple, mode="all")
-  V(netd_simple)$hub_score<-hub_score(netd_simple, weights=NA)$vector
-  V(netd_simple)$transitivity<-transitivity(netd_simple, type="local")
-  V(netd_simple)$closeness<-closeness(netd_simple, mode="all", weights=NA)
-  V(netd_simple)$betweenness<-betweenness(netd_simple, directed=F, weights=NA)
-  V(netd_simple)$eigen_centrality<-eigen_centrality(netd_simple, directed=F, weights=NA)$vector
-  V(netd_simple)$centralized_betweenness<-centr_betw(netd_simple, directed=F, normalized=T)$res
-  V(netd_simple)$centralized_closeness<-centr_clo(netd_simple, mode="all", normalized=T)$res
-  V(netd_simple)$centralized_degree<-centr_degree(netd_simple, mode="all", normalized=T)$res
+  igraph::V(netd_simple)$degree<-degree(netd_simple, mode="all")
+  igraph::V(netd_simple)$hub_score<-hub_score(netd_simple, weights=NA)$vector
+  igraph::V(netd_simple)$transitivity<-transitivity(netd_simple, type="local")
+  igraph::V(netd_simple)$closeness<-closeness(netd_simple, mode="all", weights=NA)
+  igraph::V(netd_simple)$betweenness<-betweenness(netd_simple, directed=F, weights=NA)
+  igraph::V(netd_simple)$eigen_centrality<-eigen_centrality(netd_simple, directed=F, weights=NA)$vector
+  igraph::V(netd_simple)$centralized_betweenness<-centr_betw(netd_simple, directed=F, normalized=T)$res
+  igraph::V(netd_simple)$centralized_closeness<-centr_clo(netd_simple, mode="all", normalized=T)$res
+  igraph::V(netd_simple)$centralized_degree<-centr_degree(netd_simple, mode="all", normalized=T)$res
   #V(netd_simple)$membership_community_edgeBetweenes<-cluster_edge_betweenness(netd_simple,directed = F)$membership
 
   #Add edge betweeness
-  E(netd_simple)$betweeness <- edge_betweenness(netd_simple, directed=F, weights=NA)
+  igraph::E(netd_simple)$betweeness <- edge_betweenness(netd_simple, directed=F, weights=NA)
 
-  if(saveNetwork){
-    write.graph(netd_simple,file=paste0(outputDir,"Network_",outputFileName,".graphml"),format="graphml")
+  if(saveFiles & saveNetwork){
+    write_graph(netd_simple,file=paste0(outputDir,"Network_",outputFileName,".graphml"),format="graphml")
   }
   return(netd_simple)
 }
 
-#' Find local confounding features
+#' Find local controlling features
 #' @description This function applies for a selected subnetwork a binomial test using the frequency of appearance of an edge feature and the total number of edge features. The probability corresponds to 1/n_df, where n_df corresponds to the total number of edge features in the network.
 #' The selected subnetwork corresponds to the second level neighborhood of a specific node. The test is applied to all possible second level neighborhoods in the network.
 #' @param ResultsCoNI The output of CoNI (after p-adjustment)
 #' @param network Network created with the function generate_network
 #' @param padjust logical. Filter output based on adjusted p values
-#' @return The function returns a table with the results of the binomial tests. Significant results correspond to local Confounding features
+#' @return The function returns a table with the results of the binomial tests. Significant results correspond to local controlling features
+#' @importFrom igraph V neighbors
+#' @importFrom stats dbinom
+#' @import dplyr
+#' @examples
+#' #Load color nodes table
+#' data(MetColorTable)
+#'
+#' #Assign colors according to "Class" column
+#' MetColorTable<-assign_colorsAnnotation(MetColorTable)
+#'
+#' #Load CoNI results
+#' data(CoNIResultsHFDToy)
+#'
+#' #Generate Network
+#' #Note: Colors not visible when ploting in Igraph
+#' HFDNetwork<-generate_network(ResultsCoNI = CoNIResultsHFDToy,
+#'                              colorVertexNetwork = TRUE,
+#'                              colorVertexTable = MetColorTable,
+#'                              Class = MetColorTable,
+#'                              outputDir = "./",
+#'                              outputFileName = "HFD",
+#'                              saveFiles = FALSE)
+#'
+#'#Note: For this tiny example nothing is significant
+#' LCG_BinomialTestTableHFD<- find_localControllingFeatures(ResultsCoNI = CoNIResultsHFDToy,
+#'                                                          network = HFDNetwork )
+#' LCGenes_HFD<-as.character(unique(LCG_BinomialTestTableHFD$edgeFeatures))
+#'
 #' @export
-find_localConfoundingFeatures<-function(ResultsCoNI,network,padjust=TRUE){
+find_localControllingFeatures<-function(ResultsCoNI,network,padjust=TRUE){
+  Feature_1_vertexD <- Feature_2_vertexD <- NULL
+
   ls2 <- length(unique(ResultsCoNI$Feature_edgeD)) #get number of genes affecting metabolites
   #Distance = 2 -> Second level neighborhood?
   df <- list()
@@ -1191,7 +1133,7 @@ find_localConfoundingFeatures<-function(ResultsCoNI,network,padjust=TRUE){
   res2$Pval <- apply(res2,1,function(x){dbinom(as.numeric(x[[6]]),as.numeric(x[[3]]),1/ls2)})
   res2$Padj <- p.adjust(res2$Pval)
   res2 <- res2[order(res2$Padj),]
-  res2 <- res2 %>% rename(edgeFeatures = Var1)
+  res2 <- res2 %>% rename(edgeFeatures = .data$Var1)
 
   if(padjust){
     res2 <- subset(res2,res2$Padj<0.05)
@@ -1206,9 +1148,13 @@ find_localConfoundingFeatures<-function(ResultsCoNI,network,padjust=TRUE){
 #'@param ResultsCoNI The output of CoNI
 #'@param topn Top n number of features to output
 #'@return It returns the top n features with the strongest effect
+#'@importFrom rlang .data
+#'@examples
+#' data(CoNIResultsHFDToy)
+#' Top10HFD<-top_n_LF_byMagnitude(CoNIResults_HFD,topn = 10)
 #'@export
 top_n_LF_byMagnitude<-function(ResultsCoNI, topn=10){
-  ResultsCoNI<-ResultsCoNI %>% mutate(difference=abs(cor_coefficient - pcor_coefficient)) %>% arrange(desc(difference))
+  ResultsCoNI<-ResultsCoNI %>% mutate(difference=abs(.data$cor_coefficient - .data$pcor_coefficient)) %>% arrange(desc(.data$difference))
   lEdgeFeatures<-unique(ResultsCoNI$Feature_edgeD)
   if(length(lEdgeFeatures)>=topn){
     selectedEdgeFeatures<-lEdgeFeatures[1:topn]
@@ -1219,13 +1165,22 @@ top_n_LF_byMagnitude<-function(ResultsCoNI, topn=10){
   return(Out)
 }
 
-#' Table local confounding edge features and vertex pairs
-#' @description This function creates a table of the local confounding edge features
+#' Table local controlling edge features and vertex pairs
+#' @description This function creates a table of the local controlling edge features
 #' @param CoNIResults The output of CoNI (after p-adjustment)
-#' @param LCFs Local confounding edge features as a vector
-#' @return Summary table of local confounding edge features and their respective vertex pairs, and unique vertexes.
+#' @param LCFs Local controlling edge features as a vector
+#' @return Summary table of local controlling edge features and their respective vertex pairs, and unique vertexes.
+#' @examples
+#' #Load CoNI results
+#' data(CoNIResultsHFDToy)
+#' #Note: arbitrary list of genes, not Local controlling features
+#' tableLCFs_VFs(CoNIResultsHFDToy, c("Lilr4b","Rps12"))
+#' @importFrom plyr ddply
+#' @importFrom tidyr unite
 #' @export
 tableLCFs_VFs<-function(CoNIResults,LCFs){
+  Feature_1_vertexD<-Feature_2_vertexD<-Feature_edgeD<-MetabolitePair<-NULL
+
   CoNIResults_LCFs<-CoNIResults[CoNIResults$Feature_edgeD %in% LCFs,]
   Gene_TableLCFs<- plyr::ddply(CoNIResults_LCFs, plyr::.(Feature_1_vertexD,Feature_2_vertexD), plyr::summarize,
                          Genes=paste(Feature_edgeD,collapse=","))
@@ -1242,7 +1197,7 @@ tableLCFs_VFs<-function(CoNIResults,LCFs){
   #Add to the LCFs and Metabolites pairs the unique individual metabolites
   LCFs_and_MPairs$Metabolites<-plyr::ddply(temp, plyr::.(Feature_edgeD), plyr::summarize,
                                      Metabolites=paste(unique(c(as.character(Feature_1_vertexD),as.character(Feature_2_vertexD))),collapse=","))[,2]
-  colnames(LCFs_and_MPairs)<-c("Local Confounding edge Feature","Vertex Feature pairs","Vertex Features")
+  colnames(LCFs_and_MPairs)<-c("Local Controlling edge Feature","Vertex Feature pairs","Vertex Features")
   LCFs_and_MPairs
 }
 
@@ -1253,10 +1208,8 @@ tableLCFs_VFs<-function(CoNIResults,LCFs){
 #' @param OutputName Output file name with path
 #' @return The shared triplets between two CoNI runs
 #' @examples
-#' SharedTriplets<-Compare_Triplets(Treat1_path = "./Chow/TableForNetwork_Chow.csv",
-#'                  Treat2_path = "./HFD/TableForNetwork_HFD.csv",
-#'                  OutputName = "./Shared_genes-edges_HFDvsChow.csv")
-#'
+#' #For an example see the vignette
+#' @importFrom utils write.csv
 #' @export
 Compare_Triplets<-function(Treat1_path,Treat2_path,
                            OutputName="Shared_Genes_and_Edges_Treat1vsTreat2.csv"){
@@ -1266,14 +1219,7 @@ Compare_Triplets<-function(Treat1_path,Treat2_path,
   return(Output)
 }
 
-#' Overlap frequency
-#' @description Calculate the overlap frequency per triplet between all treatments
-#' @keywords internal experimental
-Calculate_OverlapFrecuencyPerPair_allTreat<-function(Directory="./"){
-  system(paste0('python3 ./OverlapFrequencyPerPair.py ',Directory))
-}
-
-#' Compare VertexClass pairs of shared Edge Features
+#' Table VertexClass pairs of shared Edge Features
 #' @description Compare VertexClass pairs of the shared Edge Features of two treatments (e.g., lipid-class-pairs per shared gene)
 #' @param Treat1_path TableForNetwork_file (file generated by CoNI) with path of Treatment 1
 #' @param Treat2_path TableForNetwork_file (file generated by CoNI) with path of Treatment 2
@@ -1282,11 +1228,8 @@ Calculate_OverlapFrecuencyPerPair_allTreat<-function(Directory="./"){
 #' @param Treat2Name Name of treatment one, default Treat2
 #' @return A table with all possible vertex class pairs and their numbers per treatment.
 #' @examples
-#' LCP_HFDvsChow<-Compare_VertexClasses_sharedEdgeFeatures(Treat1_path = "./HFD/TableForNetwork_HFD.csv",
-#'                                                         Treat2_path = "./Chow/TableForNetwork_Chow.csv",
-#'                                                         OutputName = "./Comparison_NumberLipidClassPairsPerGene_HFDvsChow.csv",
-#'                                                         Treat1Name = "HFD",
-#'                                                         Treat2Name = "Chow")
+#' #For an example see the vignette
+#' @importFrom utils read.csv
 #' @export
 Compare_VertexClasses_sharedEdgeFeatures<-function(Treat1_path,Treat2_path,OutputName="Shared_Genes_and_Edges_Treat1vsTreat2.csv",Treat1Name="Treat1",Treat2Name="Treat2"){
   are_ClassColumnsPresent<-function(DFTreatment){
@@ -1310,55 +1253,61 @@ Compare_VertexClasses_sharedEdgeFeatures<-function(Treat1_path,Treat2_path,Outpu
   return(Output)
 }
 
-#' Vertex-class pairs profile of one shared feature between two treatments
+#' Vertex-class pairs profile of one shared edge feature
 #' @description This function will create a barplot from the output of Compare_VertexClasses_sharedEdgeFeatures for a specific shared Edge Feature (e.g., a shared gene).
 #' @param CompTreatTable Output of Compare_VertexClasses_sharedEdgeFeatures
 #' @param edgeF Edge feature present in output of Compare_VertexClasses_sharedEdgeFeatures
 #' @param treat1 Name of treatment one, default Treatment1. It should match the column names of the output of Compare_VertexClasses_sharedEdgeFeatures
 #' @param treat2 Name of treatment one, default Treatment2. It should match the column names of the output of Compare_VertexClasses_sharedEdgeFeatures
 #' @param factorOrder A list specifying the order of the treatments.
-#' @param xlb Name for x-axis
-#' @param ylb Name for the y-axis
 #' @param col1 Color for Treatment 1
 #' @param col2 Color for Treatment 2
 #' @param EdgeFeatureType Type of Edge Feature (e.g., Gene)
+#' @param xlb Name for x-axis
+#' @param ylb Name for the y-axis
 #' @param szaxisTxt Size axis text
 #' @param szaxisTitle Size axis titles
 #' @export
-#' @return A barplot showing the vertex-class pairs profile of the shared edge feature between treatments
+#' @return A barplot showing the vertex-class pairs profile of the shared edge features between two treatments
 #' @examples
-#' create_edgeFBarplot(CompTreatTable = LCP_HFDvsChow,
-#'                     edgeF = "Otulin",
+#' data(VertexClassesSharedGenes_HFDvsChow)
+#' create_edgeFBarplot(CompTreatTable = VertexClassesSharedGenes_HFDvsChow,
+#'                     edgeF = "Lilr4b",
 #'                     treat1 = "HFD",
 #'                     treat2 = "Chow",
 #'                     factorOrder = c("HFD","Chow"),
 #'                     EdgeFeatureType = "Gene")
 #' @import ggplot2
+#' @import dplyr
 #' @importFrom tidyr gather
 #' @importFrom forcats fct_relevel
+#' @importFrom tidyselect vars_select_helpers
 create_edgeFBarplot<-function(CompTreatTable,edgeF,treat1="Treatment1",treat2="Treatment2",
                               factorOrder=NULL,col1="red",col2="blue",EdgeFeatureType="Edge Feature",
                               xlb="Vertex-Class Pairs",
                               ylb="Number of pairs",
                               szaxisTxt=12,szaxisTitle=12){
+
+  treatment<-number_pairs<-VertexClassPair<-NULL
+
   CompTreatTable[,treat1]<-gsub("Pair Class Missing",0,CompTreatTable[,treat1])
   CompTreatTable[,treat2]<-gsub("Pair Class Missing",0,CompTreatTable[,treat2])
 
-  CompTreatTableF<-CompTreatTable %>% filter(EdgeFeature==edgeF)
+  CompTreatTableF<-CompTreatTable %>% filter(.data$EdgeFeature==edgeF)
   CompTreatTableF<-CompTreatTableF[,c(2:4)]
   #Make sure columns are numeric
   CompTreatTableF[,2]<-as.numeric(CompTreatTableF[,2]) #Treat1
   CompTreatTableF[,3]<-as.numeric(CompTreatTableF[,3]) #Treat2
-  #Relationship of proteins with lipid classes for specific gene
-  CompTreatTableF_VertexClasses<-CompTreatTableF %>% group_by(VertexClassPair) %>% summarise(across(where(is.numeric),sum))
+  #Relationship of edge features with lipid classes for specific gene
+  CompTreatTableF_VertexClasses<-CompTreatTableF %>% group_by(.data$VertexClassPair) %>% summarise(across(tidyselect::vars_select_helpers$where(is.numeric),sum))
   ResultsFBarplot <- gather(CompTreatTableF_VertexClasses, treatment, number_pairs,-VertexClassPair)
   #Reorder factors
   if(!is.null(factorOrder)){
-    ResultsFBarplot <- ResultsFBarplot %>% mutate(treatment = fct_relevel(treatment,factorOrder))
+    ResultsFBarplot <- ResultsFBarplot %>% mutate(treatment = fct_relevel(.data$treatment,factorOrder))
   }
 
   #Create bar plot
-  p<-ggplot(ResultsFBarplot, aes(x=VertexClassPair, y=number_pairs, fill=treatment)) +
+  p<-ggplot(ResultsFBarplot, aes(x=.data$VertexClassPair, y=.data$number_pairs, fill=.data$treatment)) +
     geom_bar(width = 0.4,stat="identity",position="dodge") +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
           legend.title = element_text(size = 14),
@@ -1367,14 +1316,14 @@ create_edgeFBarplot<-function(CompTreatTable,edgeF,treat1="Treatment1",treat2="T
           axis.title=element_text(size = szaxisTitle,face="bold", colour = "black"),
           axis.text = element_text(size = szaxisTxt))+
     scale_fill_manual("treatment", values = c(col1,col2))+
-    geom_text(aes(label=number_pairs),size=3, position=position_dodge(width=0.9), vjust=-0.25)+
+    geom_text(aes(label=.data$number_pairs),size=3, position=position_dodge(width=0.9), vjust=-0.25)+
     ggtitle(paste0(EdgeFeatureType,": ",edgeF))+
     xlab(xlb)+
     ylab(ylb)
   return(p)
 }
 
-#' Vertex-class pairs profile of shared features between treatments
+#' Vertex-class pairs profile of shared features
 #' @description This function will create a barplot from the output of Compare_VertexClasses_sharedEdgeFeatures using all shared Edge Features (e.g., genes).
 #' @param CompTreatTable Output of Compare_VertexClasses_sharedEdgeFeatures
 #' @param treat1 Name of treatment one, default Treatment1. It should match the column names of the output of Compare_VertexClasses_sharedEdgeFeatures
@@ -1383,23 +1332,34 @@ create_edgeFBarplot<-function(CompTreatTable,edgeF,treat1="Treatment1",treat2="T
 #' @param col1 Color for Treatment 1
 #' @param col2 Color for Treatment 2
 #' @param maxpairs If number of class-vertex-pairs > maxpairs, display number pairs on top of bar
-#' @param xlab Name for x-axis
-#' @param ylab Name for the y-axis
+#' @param xlb Name for x-axis
+#' @param ylb Name for the y-axis
 #' @param szggrepel Size ggrepel labels
+#' @param nudgey Nudge y ggrepel
+#' @param nudgex Nudge x ggrepel
 #' @param szaxisTxt Size axis text
 #' @param szaxisTitle Size axis title
 #' @export
 #' @return A barplot showing the vertex-class pairs profile of all shared edge features between treatments
 #' @examples
-#' create_GlobalBarplot(CompTreatTable = LCP_HFDvsChow,
+#' data(VertexClassesSharedGenes_HFDvsChow)
+#' create_GlobalBarplot(CompTreatTable = VertexClassesSharedGenes_HFDvsChow,
 #'                      treat1 = "HFD",
 #'                      treat2 = "Chow",
 #'                      factorOrder = c("HFD","Chow"),
-#'                      maxpairs = 1,xlb = "Metabolite-class-pairs")
+#'                      col1="red",
+#'                      col2 ="blue",
+#'                      maxpairs = 1,
+#'                      szggrepel = 6,
+#'                      szaxisTxt = 15,
+#'                      szaxisTitle = 15,
+#'                      xlb = "Metabolite-pair classes")
 #' @import ggplot2
 #' @import ggrepel
 #' @importFrom tidyr gather
 #' @importFrom forcats fct_relevel
+#' @importFrom rlang .data
+#' @importFrom tidyselect vars_select_helpers
 create_GlobalBarplot<-function(CompTreatTable,
                                treat1="Treatment1",
                                treat2="Treatment2",
@@ -1407,31 +1367,34 @@ create_GlobalBarplot<-function(CompTreatTable,
                                col1="red",
                                col2="blue",
                                maxpairs=1,
-                               nudgey=0.5,
-                               nudgex=0.5,
                                xlb="Vertex-Class Pairs",
                                ylb="Number of pairs",
                                szggrepel =3.5,
+                               nudgey=0.5,
+                               nudgex=0.5,
                                szaxisTxt=12,
                                szaxisTitle=12){
+
+  treatment <- number_pairs <- VertexClassPair <- NULL
+
   CompTreatTable[,treat1]<-gsub("Pair Class Missing",0,CompTreatTable[,treat1])
   CompTreatTable[,treat2]<-gsub("Pair Class Missing",0,CompTreatTable[,treat2])
 
-  #Get rid of proteins, as we want a global view
+  #Get rid of edge features, as we want a global view
   CompTreatTable_NoEdgeFeatures<-CompTreatTable[,c(2:4)]
   #Make sure columns are numeric
   CompTreatTable_NoEdgeFeatures[,2]<-as.numeric(CompTreatTable_NoEdgeFeatures[,2]) #Treat1
   CompTreatTable_NoEdgeFeatures[,3]<-as.numeric(CompTreatTable_NoEdgeFeatures[,3]) #Treat2
-  #Global view of the relationship of proteins with lipid classes
-  CompTreatTable_VertexClasses<-CompTreatTable_NoEdgeFeatures %>% group_by(VertexClassPair) %>% summarise(across(where(is.numeric),sum))
+  #Global view of the relationship of edge features with lipid classes
+  CompTreatTable_VertexClasses<-CompTreatTable_NoEdgeFeatures %>% group_by(.data$VertexClassPair) %>% summarise(across(tidyselect::vars_select_helpers$where(is.numeric),sum))
   GlobalResultsFBarplot <- tidyr::gather(CompTreatTable_VertexClasses, treatment, number_pairs,-VertexClassPair)
   #Reorder factors
   if(!is.null(factorOrder)){
-    GlobalResultsFBarplot <- GlobalResultsFBarplot %>% mutate(treatment = forcats::fct_relevel(treatment,factorOrder))
+    GlobalResultsFBarplot <- GlobalResultsFBarplot %>% mutate(treatment = forcats::fct_relevel(.data$treatment,factorOrder))
   }
 
   #Create bar plot
-  p<-ggplot(GlobalResultsFBarplot, aes(x=VertexClassPair, y=number_pairs, fill=treatment)) +
+  p<-ggplot(GlobalResultsFBarplot, aes(x=.data$VertexClassPair, y=.data$number_pairs, fill=.data$treatment)) +
     geom_bar(width = 0.4,stat="identity",position="dodge") +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
           legend.title = element_text(size = 14),
@@ -1439,13 +1402,13 @@ create_GlobalBarplot<-function(CompTreatTable,
           axis.title=element_text(size = szaxisTitle,face="bold", colour = "black"),
           axis.text = element_text(size = szaxisTxt))+
     geom_text(data = subset(GlobalResultsFBarplot, number_pairs >= maxpairs & treatment==treat1),
-              aes(label=number_pairs),
+              aes(label=.data$number_pairs),
               show.legend  = F ,
               size=szggrepel,
               position=position_dodge(width=0.9),
               vjust=-0.25)+
     geom_text_repel(data = subset(GlobalResultsFBarplot, number_pairs >=  maxpairs & treatment==treat2),
-                    aes(label=number_pairs),
+                    aes(label=.data$number_pairs),
                     show.legend = F,
                     size = szggrepel,
                     min.segment.length = unit(0, 'lines'),
@@ -1466,7 +1429,7 @@ create_GlobalBarplot<-function(CompTreatTable,
 }
 
 #'Labels to colors
-#' @description This function is modified version of labels2colors of WGCNA and the internet
+#' @description Internal use. This function is modified version of labels2colors of WGCNA and the internet
 #' @keywords internal
 labels2colors_2<-function (labels, zeroIsGrey = TRUE, colorSeq = NULL, naColor = "grey", commonColorCode = TRUE) {
   standardColors<-function (n = NULL) {
@@ -1544,7 +1507,7 @@ labels2colors_2<-function (labels, zeroIsGrey = TRUE, colorSeq = NULL, naColor =
 }
 
 #' Get class rgb color
-#' This function gets the class rgb color of a specific (lipid) class
+#' @description Internal use. This function gets the class rgb color of a specific (lipid) class
 #' @keywords internal
 getcolor<-function(ClassM,tableColor){
   IDxclass<-grep("class$",colnames(tableColor),ignore.case = TRUE)
@@ -1553,8 +1516,8 @@ getcolor<-function(ClassM,tableColor){
   return(clhex)
 }
 
-#' AnnotationDf - Assing Colors Class
-#' @description This function assigns two color columns (color name and rgb) to an annotation data frame according to a column named 'Class' or 'class'
+#' Assing Colors to Class
+#'@description This function assigns two color columns (color name and rgb) to an annotation data frame according to a column named 'Class' or 'class'
 #'@param AnnotationDf Annotation data frame that contains a factor variable to use to assign colors
 #'@param col  Column with factor variable that will be used to assign colors
 #'@export
@@ -1567,7 +1530,7 @@ assign_colorsAnnotation<-function(AnnotationDf,col="Class"){
 }
 
 #' Get colors
-#' @description This function gets the rgb colors of every (lipid) class and names them according to the class
+#' @description Internal use. This function gets the rgb colors of every (lipid) class and names them according to the class
 #' @keywords internal
 obtain_groupcolors<-function(Annotation){
   group.colors<-c()
@@ -1582,8 +1545,10 @@ obtain_groupcolors<-function(Annotation){
 }
 
 #' Number lipid features per class
-#' @description This function counts for every edge feature the number of (lipids/)features per class. It disregards the number of (lipid) pairs...
+#' @description Internal use. This function counts for every edge feature the number of vertex features (e.g. lipids) per class. It disregards the number of vertex pairs...
 #' @keywords internal
+#' @importFrom tidyr separate
+#' @import dplyr
 countClassPerEdgeFeature<-function(ResTable,treatment="Chow"){
   EdgeFeatures<-unique(ResTable$EdgeFeature)
   ResCountVertexClass<-data.frame(
@@ -1594,8 +1559,8 @@ countClassPerEdgeFeature<-function(ResTable,treatment="Chow"){
   )
 
   for (edgeFeature in EdgeFeatures){
-    FractionEdgeFeature<-ResTable %>% filter(EdgeFeature==edgeFeature) #Count for every EdgeFeature
-    FractionEdgeFeature <- FractionEdgeFeature %>% tidyr::separate(VertexClassPair, c("Vertex1", "Vertex2"), "_") #Split the Vertex pairs, get two columns
+    FractionEdgeFeature<-ResTable %>% filter(.data$EdgeFeature==edgeFeature) #Count for every EdgeFeature
+    FractionEdgeFeature <- FractionEdgeFeature %>% tidyr::separate(.data$VertexClassPair, c("Vertex1", "Vertex2"), "_") #Split the Vertex pairs, get two columns
     TrColumn<-which(colnames(FractionEdgeFeature) == treatment) #Get index of the desired treatment to count Vertexs
     FractionEdgeFeature<-FractionEdgeFeature[FractionEdgeFeature[,TrColumn]>0,] #Get the instances that are not zero
     VertexsPresent<-unique(c(FractionEdgeFeature$Vertex1, FractionEdgeFeature$Vertex2)) #Get the unique Vertexs the gene/EdgeFeature is connected to
@@ -1609,21 +1574,26 @@ countClassPerEdgeFeature<-function(ResTable,treatment="Chow"){
     }
   }
   colnames(ResCountVertexClass)<-c("EdgeFeature","VertexClass","Count")
-  ResCountVertexClass <- ResCountVertexClass %>% filter(Count>0)
+  ResCountVertexClass <- ResCountVertexClass %>% filter(.data$Count>0)
   ResCountVertexClass$Count <- as.numeric(ResCountVertexClass$Count) #make sure is numeric
-  ResCountVertexClass<-ResCountVertexClass %>% arrange(group_by = EdgeFeature, dplyr::desc(Count))
+  ResCountVertexClass<-ResCountVertexClass %>% arrange(group_by = .data$EdgeFeature, dplyr::desc(.data$Count))
   return(ResCountVertexClass)
 }
 
 #' Split function
-#' @description Function to split the EdgeFeatures in smaller groups
+#' @description Internal use. Function to split the EdgeFeatures in smaller groups
 #' @keywords internal
 chunk2 <- function(x,n) split(x, cut(seq_along(x), n, labels = FALSE))
 
 #' Number Vertex features per class for every shared edge feature
-#' @description This function creates a barplot depicting the number of vertex features per class for every edge feature. To use this function one has to split first the file (or not if it is small) with the funciton chunk2
+#' @description Internal use. This function creates a barplot depicting the number of vertex features per class for every edge feature. To use this function one has to split first the file (or not if it is small) with the funciton chunk2
 #' @keywords internal
+#' @import ggrepel
+#' @import ggplot2
 barplot_VertexsPerEdgeFeature<-function(SplitFile,title="Vertex Features per class",AnnotationWithColors,ggrepelL=TRUE,xlb="Gene",szggrepel=2.5,szTitle=12,szaxisTxt=12,szaxisTitle=12,szLegendText=10,szLegendKey=1){
+
+  EdgeFeature <- Count <- VertexClass <- NULL
+
   group.colors<-obtain_groupcolors(AnnotationWithColors)
   #Get table that counts how many times the EdgeFeature appears,
   #every time corresponds to a number of a specific Vertex class
@@ -1654,8 +1624,8 @@ barplot_VertexsPerEdgeFeature<-function(SplitFile,title="Vertex Features per cla
     g<-g+geom_text_repel(aes(label = VertexClass),
                          size=szggrepel,color="black",
                          min.segment.length = unit(0, 'lines'),
-                         nudge_y=0.5,
-                         nudge_x=0.5,
+                         nudge_y=0.1,
+                         nudge_x=0.1,
                          vjust = -1,
                          force = 0.1,
                          segment.alpha=0.3,
@@ -1673,30 +1643,35 @@ barplot_VertexsPerEdgeFeature<-function(SplitFile,title="Vertex Features per cla
 #' @param Annotation Data frame that includes the rgb colors for every class. The column 'class' (or 'Class') has to be present and also the column 'ColorRgb'.
 #' @param chunks To avoid a non readable dense plot the results can be spitted in multiple plots
 #' @param treat Specify the treatment for which the plot will be created. It should be one of the two treatments in the output of Compare_VertexClasses_sharedEdgeFeatures.
-#' @param small logical. If only a few proteins are in the input set as TRUE. A single plot will be created
+#' @param small logical. If only a few edge features are in the input set as TRUE. A single plot will be created
 #' @param ggrep logical. If TRUE includes ggrepel labels for every bar
-#' @param xlb Change the x-axis label
+#' @param xlb x-axis label
 #' @param onlyTable logical. If TRUE a table is returned instead of a plot
 #' @param szTitle Size title
 #' @param szaxisTxt Size axis text
 #' @param szaxisTitle Size axis title
+#' @param ... Other parameters for inner functions, mainly ggplot2 visual parameters
 #' @return A barplot depicting the number of vertex features per class for every shared edge features between two treatments. The barplot restricts to one treatment.
 #' @examples
-#' getVertexsPerEdgeFeature(CompTreatTable = LCP_HFDvsChow,
+#' data(VertexClassesSharedGenes_HFDvsChow)
+#' data(MetColorTable)
+#' #Note: No differences in example as all the Output of CoNI was kept
+#' getVertexsPerEdgeFeature(CompTreatTable = VertexClassesSharedGenes_HFDvsChow,
 #'                          Annotation = MetColorTable,
 #'                          chunks = 2,
 #'                          treat = "HFD")
 #' @export
 #' @import ggplot2
 #' @import ggrepel
-getVertexsPerEdgeFeature<-function(CompTreatTable,Annotation,chunks=5,treat=NULL,
-                                   small=FALSE,
-                                   ggrep=TRUE,
-                                   xlb="Gene",
-                                   onlyTable=F,
+getVertexsPerEdgeFeature<-function(CompTreatTable, Annotation,
+                                   chunks = 5, treat=NULL,
+                                   small = FALSE,
+                                   ggrep = TRUE,
+                                   xlb = "Gene",
+                                   onlyTable = F,
                                    szTitle = 12,
-                                   szaxisTxt=12,
-                                   szaxisTitle=12,...){
+                                   szaxisTxt = 12,
+                                   szaxisTitle = 12, ...){
   if(is.null(treat)){
     stop("Specify treatment")
   }
@@ -1733,24 +1708,36 @@ getVertexsPerEdgeFeature<-function(CompTreatTable,Annotation,chunks=5,treat=NULL
 #' @param Treat1 Name treatment 1 as in table CompTreatTable
 #' @param Treat2 Name treatment 2 as in table CompTreatTable
 #' @param Annotation Data frame that includes the rgb colors for every class. The column 'class' (or 'Class') has to be present and also the column 'ColorRgb'
+#' @param chunks To avoid a non readable dense plot the results can be spitted in multiple plots
 #' @param ggrep logical. If TRUE includes ggrepel labels for every bar
 #' @param xlb Change the x-axis label
 #' @param onlyT logical. If TRUE a table is returned instead of a grid of plots
-#' @param chunks To avoid a non readable dense plot the results can be spitted in multiple plots
+#' @param small logical. If only a few edge features are in the input set as TRUE. A single plot will be created
+#' @param ... Other parameters for inner functions, mainly ggplot2 visual parameters
 #' @return Two side-by-side barplots, one for each treatment, showing the number of vertex features per class for every shared edge feature
 #' @examples
-#' HFD_vs_Chow_LCP_Gene<-getVertexsPerEdgeFeature_and_Grid(LCP_HFDvsChow,"HFD","Chow",
-#'                                                         Annotation=MetColorTable,ggrep=F,
-#'                                                         small = T)
-#' plot(HFD_vs_Chow_LCP_Gene) #Plot to screen
-#' ggsave(HFD_vs_Chow_LCP_Gene,file="./HFD_vs_Chow_ClassProfile.svg") #or save it
+#' data(VertexClassesSharedGenes_HFDvsChow)
+#' VCSGs<-VertexClassesSharedGenes_HFDvsChow
+#' data(MetColorTable)
+#' HFD_vs_Chow_LCP_Gene<-getVertexsPerEdgeFeature_and_Grid(VCSGs,
+#'                                                         "HFD","Chow",
+#'                                                         Annotation=MetColorTable,
+#'                                                         ggrep=FALSE,
+#'                                                         small = FALSE,
+#'                                                         chunks = 3,
+#'                                                         szLegendKey=0.2)
+#' plot(HFD_vs_Chow_LCP_Gene)
 #' @export
 #' @import ggplot2
 #' @import ggrepel
 #' @importFrom  gridExtra arrangeGrob
-#T_MetClasses e.g. ChowvsHFD
-#colorGroups = group.colors
-getVertexsPerEdgeFeature_and_Grid<-function(CompTreatTable,Treat1,Treat2,Annotation,ggrep=T,chunks=3,xlb="Edge Feature",onlyT=FALSE,small=FALSE,...){
+#' @importFrom utils capture.output
+getVertexsPerEdgeFeature_and_Grid<-function(CompTreatTable,
+                                            Treat1, Treat2, Annotation,
+                                            chunks = 3, ggrep = T,
+                                            xlb = "Edge Feature",
+                                            onlyT = FALSE,
+                                            small = FALSE,...){
   if(small){
     ylimTreat1<-capture.output(Treat1Plot<-getVertexsPerEdgeFeature(CompTreatTable,chunks = chunks,small=small,treat = Treat1,Annotation=Annotation,ggrep = ggrep,xlb = xlb,...))
     ylimTreat2<-capture.output(Treat2Plot<-getVertexsPerEdgeFeature(CompTreatTable,chunks = chunks,small=small,treat = Treat2,Annotation=Annotation,ggrep = ggrep, xlb =xlb,...))
@@ -1814,27 +1801,44 @@ getVertexsPerEdgeFeature_and_Grid<-function(CompTreatTable,Treat1,Treat2,Annotat
 #' @description This function will create a stacked barplot from the output of Compare_VertexClasses_sharedEdgeFeatures using all shared Edge Features (e.g., genes) between two treatments.
 #' @param CompTreatTable Output of Compare_VertexClasses_sharedEdgeFeatures
 #' @param treat Name of treatment to display. It should match the column name in the output of Compare_VertexClasses_sharedEdgeFeatures
-#' @param max_pairsLegend If number of Edge Features >= max_pairsLegend, display number of Edge Features
 #' @param xlb Name for x-axis
 #' @param ylb Name for y-axis
+#' @param max_pairsLegend If number of Edge Features >= max_pairsLegend, display number of Edge Features as label with ggrepel
 #' @param mx.overlaps Max number of overlaps ggrepel
 #' @param szggrepel Size ggrepel labels
+#' @param force Repelling force for ggrepel labels
 #' @param szTitle Size Title
 #' @param szaxisTxt Size axis text
 #' @param szaxisTitle Size axis titles
+#' @param ylim Optional y-limits of the plot
 #' @import ggplot2
 #' @import ggrepel
 #' @return A stacked barplot showing the vertex-class pairs profile of all shared edge features but restricted to a single treatment. Every bar consists of multiple genes that are depicted with different colors
 #' @examples
-#' create_stackedGlobalBarplot_perTreatment(CompTreatTable = LCP_HFDvsChow,
+#' data(VertexClassesSharedGenes_HFDvsChow)
+#' create_stackedGlobalBarplot_perTreatment(CompTreatTable = VertexClassesSharedGenes_HFDvsChow,
 #'                                          treat = "HFD",
-#'                                          max_pairsLegend = 1,
+#'                                          max_pairsLegend = 9,
 #'                                          xlb = "Metabolite-class-pairs")
 #' @export
 #' @importFrom tidyr gather
 #' @importFrom forcats fct_relevel
 #' @importFrom gplots col2hex
-create_stackedGlobalBarplot_perTreatment<-function(CompTreatTable,treat=NULL,max_pairsLegend=2,ylim=NULL,force=0.1,xlb="Vertex-Class Pairs",ylb="Number of pairs",mx.overlaps=Inf,szggrepel=6,szTitle=12,szaxisTxt=12,szaxisTitle=12){
+#' @importFrom rlang .data
+#' @importFrom tidyselect vars_select_helpers
+create_stackedGlobalBarplot_perTreatment<-function(CompTreatTable,
+                                                   treat=NULL,
+                                                   xlb="Vertex-Class Pairs",
+                                                   ylb="Number of pairs",
+                                                   max_pairsLegend = 2,
+                                                   mx.overlaps = Inf,
+                                                   szggrepel=6,
+                                                   force=0.1,
+                                                   szTitle=12, szaxisTxt=12, szaxisTitle=12,
+                                                   ylim=NULL){
+
+  treatment <- number_pairs <- VertexClassPair <- EdgeFeature <- label <- NULL
+
   CompTreatTable[,ncol(CompTreatTable)]<-as.numeric(gsub("Pair Class Missing",0,CompTreatTable[,ncol(CompTreatTable)]))
   CompTreatTable[,ncol(CompTreatTable)-1]<-as.numeric(gsub("Pair Class Missing",0,CompTreatTable[,ncol(CompTreatTable)-1]))
 
@@ -1842,9 +1846,9 @@ create_stackedGlobalBarplot_perTreatment<-function(CompTreatTable,treat=NULL,max
     print("Provide treatment to filter data e.g., treat='HFD'")
   }else{
     #Global view of the relationship of edge features with metabolite classes
-    Stacked<-CompTreatTable %>% group_by(VertexClassPair,EdgeFeature) %>% summarise(across(where(is.numeric),sum))
+    Stacked<-CompTreatTable %>% group_by(.data$VertexClassPair,.data$EdgeFeature) %>% summarise(across(tidyselect::vars_select_helpers$where(is.numeric),sum))
     StackedFBarplot <- tidyr::gather(Stacked, treatment, number_pairs,c(-VertexClassPair,-EdgeFeature))
-    StackedFBarplotTreat<-StackedFBarplot %>% filter(treatment==treat)
+    StackedFBarplotTreat<-StackedFBarplot %>% filter(.data$treatment==treat)
 
     ColorTable<-data.frame(
       EdgeFeature=StackedFBarplotTreat$EdgeFeature,
@@ -1853,19 +1857,19 @@ create_stackedGlobalBarplot_perTreatment<-function(CompTreatTable,treat=NULL,max
     names(ColorGroupRgb) = ColorTable$EdgeFeature
     #StackedFBarplotTreat$EdgeFeature <- factor(StackedFBarplotTreat$EdgeFeature, levels = ColorTable$EdgeFeature)
 
-    countmaxperLipidClass<-StackedFBarplotTreat %>% group_by(VertexClassPair) %>% summarise(number_pairs = sum(number_pairs))
+    countmaxperLipidClass<-StackedFBarplotTreat %>% group_by(.data$VertexClassPair) %>% summarise(number_pairs = sum(.data$number_pairs))
     cat(max(countmaxperLipidClass$number_pairs))
 
 
 
-    TreatStacked <- ggplot(StackedFBarplotTreat, aes(x =VertexClassPair , y = number_pairs, fill=EdgeFeature))+
+    TreatStacked <- ggplot(StackedFBarplotTreat, aes(x =.data$VertexClassPair , y = .data$number_pairs, fill=.data$EdgeFeature))+
       geom_bar(stat="identity") +
       theme(legend.position = "none") + #Remove legend
       theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
             plot.title = element_text(hjust = 0.5,size=szTitle,face="bold"),
             axis.title=element_text(size = szaxisTitle,face="bold", colour = "black"),
             axis.text = element_text(size = szaxisTxt))+
-      geom_text_repel(data = . %>%
+      geom_text_repel(data = StackedFBarplotTreat %>%
                       mutate(label = ifelse(number_pairs>=max_pairsLegend,paste0(EdgeFeature,": ",number_pairs),"")),
                       aes(label=label),
                       size = szggrepel,
@@ -1894,24 +1898,42 @@ create_stackedGlobalBarplot_perTreatment<-function(CompTreatTable,treat=NULL,max
 #' @param Treat1 Name treatment 1 as in table CompTreatTable
 #' @param Treat2 Name treatment 2 as in table CompTreatTable
 #' @param ggrep logical. If TRUE includes ggrepel labels for every bar
-#' @param max_pairsLegend If number of Edge Features >= max_pairsLegend, display number of Edge Features
-#' @param xlab Name for x-axis
+#' @param max_pairsLegend If number of Edge Features >= max_pairsLegend, display number of Edge Features as ggrepel label
 #' @param mx.overlaps Max number of overlaps ggrepel
 #' @param szggrepel Size ggrepel labels
+#' @param force Repelling force for ggrepel labels
+#' @param xlb Name for x-axis
+#' @param ... Other parameters for inner functions, mainly ggplot2 visual parameters
 #' @return A stacked barplot showing the vertex-class pairs profile of all shared edge features between two treatments (one bar plot per treatment). Every bar consists of multiple genes that are depicted with different colors
 #' @examples
-#' HFD_vs_Chow_stackedBarplot<-getstackedGlobalBarplot_and_Grid(CompTreatTable = LCP_HFDvsChow,
+#' data(VertexClassesSharedGenes_HFDvsChow)
+#' VCSGs<-VertexClassesSharedGenes_HFDvsChow
+#' HFD_vs_Chow_stackedBarplot<-getstackedGlobalBarplot_and_Grid(VCSGs,
 #'                                                              Treat1 = "HFD",
 #'                                                              Treat2 = "Chow",
-#'                                                              Annotation = MetColorTable,
-#'                                                              xlb = "Metabolite-class-pairs")
-#' plot(HFD_vs_Chow_stackedBarplot) #Plot to screen
-#' ggsave(HFD_vs_Chow_stackedBarplot,file="./HFD_vs_Chow_ClassProfile.svg") #or save it
+#'                                                              xlb = "Metabolite-class-pairs",
+#'                                                              max_pairsLegend=9)
+#' plot(HFD_vs_Chow_stackedBarplot)
+#' @importFrom utils capture.output
 #' @export
-getstackedGlobalBarplot_and_Grid<-function(CompTreatTable,Treat1,Treat2,Annotation,ggrep=T,max_pairsLegend=1,force=0.1,xlb="Vertex-Class Pairs",mx.overlaps=Inf,szggrepel=6,...){
+getstackedGlobalBarplot_and_Grid<-function(CompTreatTable, Treat1, Treat2,
+                                           ggrep=T, max_pairsLegend = 1, force = 0.1, mx.overlaps=Inf, szggrepel=6,
+                                           xlb = "Vertex-Class Pairs",...){
   #Get ylimits and plots
-  ylimTreat1<-capture.output(Treat1Plot<-create_stackedGlobalBarplot_perTreatment(CompTreatTable = CompTreatTable,treat = Treat1,max_pairsLegend = max_pairsLegend,force=force,xlb=xlb,mx.overlaps=mx.overlaps,szggrepel=szggrepel,...))
-  ylimTreat2<-capture.output(Treat2Plot<-create_stackedGlobalBarplot_perTreatment(CompTreatTable = CompTreatTable,treat = Treat2,max_pairsLegend = max_pairsLegend,force=force,xlb=xlb,mx.overlaps=mx.overlaps,szggrepel=szggrepel,...))
+  ylimTreat1<-capture.output(Treat1Plot<-create_stackedGlobalBarplot_perTreatment(CompTreatTable = CompTreatTable,
+                                                                                  treat = Treat1,
+                                                                                  max_pairsLegend = max_pairsLegend,
+                                                                                  force = force,
+                                                                                  xlb = xlb,
+                                                                                  mx.overlaps = mx.overlaps,
+                                                                                  szggrepel = szggrepel, ...))
+  ylimTreat2<-capture.output(Treat2Plot<-create_stackedGlobalBarplot_perTreatment(CompTreatTable = CompTreatTable,
+                                                                                  treat = Treat2,
+                                                                                  max_pairsLegend = max_pairsLegend,
+                                                                                  force = force,
+                                                                                  xlb = xlb,
+                                                                                  mx.overlaps = mx.overlaps,
+                                                                                  szggrepel = szggrepel, ...))
 
   ylim<-cbind(as.numeric(ylimTreat1),as.numeric(ylimTreat2))
   ylim_max<-apply(ylim,1,max)
@@ -1926,7 +1948,7 @@ getstackedGlobalBarplot_and_Grid<-function(CompTreatTable,Treat1,Treat2,Annotati
 }
 
 #' Bipartite Table
-#' @description This function creates a table that is used to create a simple bipartite network
+#' @description Internal use. This function creates a table that is used to create a simple bipartite network
 #' @keywords internal
 createBipartiteTable<-function(CoNINetworkTable){
   resultFinal<-list()
@@ -1954,22 +1976,19 @@ createBipartiteTable<-function(CoNINetworkTable){
   return(resultFinal)
 }
 
-#' Create Bipartite Network
-#' @description This function creates a simple bipartite graph, it shows the driver and linked features as nodes.
+#' Bipartite Network
+#' @description This function creates a simple bipartite graph, it shows the driver and linker features as nodes.
 #' @param TableNetwork TableForNetwork_file (file generated by CoNI) with path
 #' @param colorVertexTable Table specifying the colors for the vertex features. The first column should contain the names matching the features of the vertex Data and another column should specify the colors (column name: Colors).
 #' @param incidenceMatrix logical. If TRUE it returns a hypergraph incidence matrix instead of a bipartite graph
-#' @return This function returns a bipartite graph (igraph object). Basic network statistics are included in the network, but ignoring that is a bipartite graph
+#' @return This function returns a bipartite graph (igraph object) or a hypergraph incidence matrix. Basic network statistics are included in the bipartite graph
 #' @examples
-#' BipartiteGraph_Chow<-createBipartiteGraph("./Chow_example/TableForNetwork_Chow.csv",
-#'                                           MetColorTable)
-#' plot(BipartiteGraph_Chow) #Plot to screen
-#' write.graph(BipartiteTest,file="Chow_example/BipartiteNetwork.graphml",format="graphml") #Save as graphml
+#' #See vignette for an example
 #' @export
 #' @importFrom gplots col2hex
-#' @importFrom igraph graph_from_data_frame simplify
-createBipartiteGraph<-function(TableNetworkPath,colorVertexTable,incidenceMatrix=F){
-  TableNetwork<-read.csv(TableNetworkPath)
+#' @importFrom igraph graph_from_data_frame simplify V E degree hub_score transitivity closeness betweenness eigen_centrality centr_betw centr_clo centr_degree edge_betweenness write_graph as_ids get.incidence
+createBipartiteGraph<-function(TableNetwork,colorVertexTable,incidenceMatrix=F){
+  TableNetwork<-read.csv(TableNetwork)
   #Create bipartite table
   bipartiteTable<-createBipartiteTable(TableNetwork)
   #Remove redundancy
@@ -2001,24 +2020,24 @@ createBipartiteGraph<-function(TableNetworkPath,colorVertexTable,incidenceMatrix
 
   #Bipartite option
   #bipartite_mapping(netd)$type this function is giving me problems
-  V(netd)$type <- ifelse(as_ids(V(netd)) %in% bipartiteTable$from,TRUE,FALSE)
-  V(netd)$shape <- ifelse(V(netd)$type, "circle", "square")
+  igraph::V(netd)$type <- ifelse(igraph::as_ids(V(netd)) %in% bipartiteTable$from,TRUE,FALSE)
+  igraph::V(netd)$shape <- ifelse(V(netd)$type, "circle", "square")
 
   #Add network stats to bipartite graph... at the moment ignoring that it is a bipartite graph
   #stats are as as if it were a simple network
-  V(netd)$degree<-degree(netd, mode="all")
-  V(netd)$hub_score<-hub_score(netd, weights=NA)$vector
-  V(netd)$transitivity<-transitivity(netd, type="local")
-  V(netd)$closeness<-closeness(netd, mode="all", weights=NA)
-  V(netd)$betweenness<-betweenness(netd, directed=F, weights=NA)
-  V(netd)$eigen_centrality<-eigen_centrality(netd, directed=F, weights=NA)$vector
-  V(netd)$centralized_betweenness<-centr_betw(netd, directed=F, normalized=T)$res
-  V(netd)$centralized_closeness<-centr_clo(netd, mode="all", normalized=T)$res
-  V(netd)$centralized_degree<-centr_degree(netd, mode="all", normalized=T)$res
+  igraph::V(netd)$degree <- degree(netd, mode="all")
+  igraph::V(netd)$hub_score <- hub_score(netd, weights=NA)$vector
+  igraph::V(netd)$transitivity <- transitivity(netd, type="local")
+  igraph::V(netd)$closeness <- closeness(netd, mode="all", weights=NA)
+  igraph::V(netd)$betweenness <- betweenness(netd, directed=F, weights=NA)
+  igraph::V(netd)$eigen_centrality <- eigen_centrality(netd, directed=F, weights=NA)$vector
+  igraph::V(netd)$centralized_betweenness <- centr_betw(netd, directed=F, normalized=T)$res
+  igraph::V(netd)$centralized_closeness <- centr_clo(netd, mode="all", normalized=T)$res
+  igraph::V(netd)$centralized_degree <- centr_degree(netd, mode="all", normalized=T)$res
   #V(netd)$membership_community_edgeBetweenes<-cluster_edge_betweenness(netd,directed = F)$membership
 
   #Add edge betweeness
-  E(netd)$betweeness <- edge_betweenness(netd, directed=F, weights=NA)
+  igraph::E(netd)$betweeness <- edge_betweenness(netd, directed=F, weights=NA)
 
   if(incidenceMatrix){
     incidenceM<-get.incidence(netd)
@@ -2033,8 +2052,24 @@ createBipartiteGraph<-function(TableNetworkPath,colorVertexTable,incidenceMatrix
 #' @param Network An Igraph network
 #' @return Returns network statistics. For more information on the statistics consult the igraph package.
 #' @examples
+#' #Load color nodes table
+#' data(MetColorTable)
+#' #Assign colors according to "Class" column
+#' MetColorTable<-assign_colorsAnnotation(MetColorTable)
+#' #Load CoNI results
+#' data(CoNIResultsHFDToy)
+#'
+#' #Generate Network
+#' HFDNetwork<-generate_network(ResultsCoNI = CoNIResultsHFDToy,
+#'                              colorVertexNetwork = TRUE,
+#'                              colorVertexTable = MetColorTable,
+#'                              outputDir = "./",
+#'                              outputFileName = "HFD",
+#'                              saveFiles = FALSE)
 #' NetStats(HFDNetwork)
 #' @importFrom  tibble rownames_to_column
+#' @importFrom igraph mean_distance edge_density transitivity diameter get_diameter eigen_centrality centr_betw centr_clo centr_degree
+#' @import dplyr
 #' @export
 NetStats<-function(Network){
   NetworkStatsTable<-data.frame(Value=t(data.frame(
@@ -2064,25 +2099,65 @@ getvertexes_edgeFeature<-function(edgeFeature,CoNIResults){
 #' @description This function generates a scatter plot with two regression lines. The slopes of the regression lines correspond to the correlation and partial correlation coefficients (blue for cor and red for pcor)
 #' @param ResultsCoNI The significant results generated by CoNI
 #' @param edgeFeature The edge feature to explore e.g. Fabp2 (for a gene)
-#' @param vertexFeatures The vertex features to include as a list. If not specified all metabolites available in combination with the edgeFeature will be used
 #' @param vertexD Vertex data that was given as input to CoNI
 #' @param edgeD Edge data that was given as input to CoNI
+#' @param vertexFeatures The vertex features to include as a list. If not specified all metabolites available in combination with the edgeFeature will be used
+#' @param outputDir Output directory with path
 #' @param label_edgeFeature Name for plot title e.g. Gene or Protein
 #' @param plot_to_screen logical. If TRUE plots will be outputted to the plotting screen
-#' @param file_name File name to save the plots
+#' @param fname File name to save the plots
 #' @param height height of the plotting area for the saved file
 #' @param width width of the plotting are for the saved file
+#' @param saveFiles logical. If FALSE plot is not saved to disk
+#' @import ggrepel
+#' @import ggplot2
+#' @importFrom stats lm as.formula resid
+#' @importFrom rlang .data
 #' @examples
+#' #Load gene expression - Toy dataset of two treatments
+#' data(GeneExpToy)
+#' #Samples in rows and genes in columns
+#' GeneExp <- as.data.frame(t(GeneExpToy))
+#' hfd_gene <- GeneExp[1:8,] #high fat diet
+#' chow_gene<- GeneExp[9:nrow(GeneExp),] #chow diet
 #'
-#' #Plot gene of interest, included in the results of CoNI
-#' plotPcorvsCor(ResultsCoNI = CoNIResults,edgeFeature = "Hpgd",
-#'               vertexD = hfd_metabo,edgeD = hfd_gene,
+#' #Load metabolite expression - Toy dataset of two treatments
+#' data(MetaboExpToy)
+#' MetaboExp <- MetaboExpToy
+#' hfd_metabo <- MetaboExp[11:18,] #high fat diet
+#' chow_metabo <- MetaboExp[1:10,] #chow diet
+#'
+#' #Match row names both data sets
+#' rownames(hfd_metabo)<-rownames(hfd_gene)
+#' rownames(chow_metabo)<-rownames(chow_gene)
+#'
+#' #Load CoNI results
+#' data(CoNIResultsHFDToy)
+#'
+#' plotPcorvsCor(ResultsCoNI = CoNIResultsHFDToy,
+#'               edgeFeature = "Arfrp1",
+#'               vertexFeatures = c("PC.ae.C40.2", "SM..OH..C22.1"),
+#'               vertexD = hfd_metabo,
+#'               edgeD = hfd_gene,
 #'               label_edgeFeature = "Gene",
-#'               plot_to_screen = T,height = 10)
+#'               plot_to_screen = TRUE,
+#'               height = 10,
+#'               saveFiles = FALSE)
 #'
 #' @export
-plotPcorvsCor<-function(ResultsCoNI,edgeFeature,vertexD,edgeD,label_edgeFeature="Gene",vertexFeatures=NULL,plot_to_screen=T,outputDir="./",file_name=paste0(outputDir,edgeFeature,".pdf"),height=10,width=8){
-  ResultsCoNIfull<-ResultsCoNI %>% filter(Feature_edgeD==edgeFeature)
+plotPcorvsCor<-function(ResultsCoNI,
+                        edgeFeature,
+                        vertexD, edgeD,
+                        vertexFeatures=NULL,
+                        outputDir="./",
+                        fname,
+                        label_edgeFeature="Edge Feature",
+                        plot_to_screen=T,
+                        height=10,width=8,
+                        saveFiles=FALSE){
+
+  fname<-paste0(outputDir,edgeFeature,".pdf")
+  ResultsCoNIfull<-ResultsCoNI %>% filter(.data$Feature_edgeD==edgeFeature)
   if(!is.null(vertexFeatures)){
     llF1<-sapply(ResultsCoNIfull$Feature_1_vertexD,function(feature){feature %in% vertexFeatures})
     ResultsCoNIfull<-ResultsCoNIfull[llF1,]
@@ -2124,8 +2199,7 @@ plotPcorvsCor<-function(ResultsCoNI,edgeFeature,vertexD,edgeD,label_edgeFeature=
     NewDF<-as.data.frame(cbind(vertex1=edgeFeature_vertex_Expression[[2]],vertex2=edgeFeature_vertex_Expression[[3]],eM1G1=ResMatrix$eM1G1,eM2G1=ResMatrix$eM2G1))
     NewDF<-as.data.frame(scale(NewDF))
 
-    library(ggrepel)
-    plots[[i]]<-ggplot(NewDF,aes(vertex1,vertex2)) +
+    plots[[i]]<-ggplot(NewDF,aes(.data$vertex1,.data$vertex2)) +
       geom_point()+
       stat_smooth(method="lm",se=F)+
       geom_point(data = NewDF,aes(eM1G1,eM2G1),color="red")+
@@ -2138,12 +2212,13 @@ plotPcorvsCor<-function(ResultsCoNI,edgeFeature,vertexD,edgeD,label_edgeFeature=
   if(plot_to_screen){
     sapply(plots,plot)
   }
-  if(length(plots)>1){
-    plots_arrange<-arrangeGrob(grobs=plots,ncol=2)
-    ggsave(file=file_name, plot=plots_arrange, width=width, height=height)
-  }else{
-    ggsave(file=file_name, plot=plots[[1]], width=6, height=4)
+  if(saveFiles){
+    if(length(plots)>1){
+      plots_arrange<-arrangeGrob(grobs=plots,ncol=2)
+      ggsave(filename=fname, plot=plots_arrange, width=width, height=height)
+    }else{
+      ggsave(filename=fname, plot=plots[[1]], width=6, height=4)
+    }
   }
-
 }
 

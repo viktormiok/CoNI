@@ -17,3 +17,7 @@ It returns the top n features with the strongest effect
 \description{
 This function outputs the linker features with the strongest effect on the correlation of the vertex features
 }
+\examples{
+data(CoNIResultsHFDToy)
+Top10HFD<-top_n_LF_byMagnitude(CoNIResults_HFD,topn = 10)
+}

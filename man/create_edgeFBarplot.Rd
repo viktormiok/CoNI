@@ -2,7 +2,7 @@
 % Please edit documentation in R/CoNI_functions.R
 \name{create_edgeFBarplot}
 \alias{create_edgeFBarplot}
-\title{Vertex-class pairs profile of one shared feature between two treatments}
+\title{Vertex-class pairs profile of one shared edge feature}
 \usage{
 create_edgeFBarplot(
   CompTreatTable,
@@ -45,14 +45,15 @@ create_edgeFBarplot(
 \item{szaxisTitle}{Size axis titles}
 }
 \value{
-A barplot showing the vertex-class pairs profile of the shared edge feature between treatments
+A barplot showing the vertex-class pairs profile of the shared edge features between two treatments
 }
 \description{
 This function will create a barplot from the output of Compare_VertexClasses_sharedEdgeFeatures for a specific shared Edge Feature (e.g., a shared gene).
 }
 \examples{
-create_edgeFBarplot(CompTreatTable = LCP_HFDvsChow,
-                    edgeF = "Otulin",
+data(VertexClassesSharedGenes_HFDvsChow)
+create_edgeFBarplot(CompTreatTable = VertexClassesSharedGenes_HFDvsChow,
+                    edgeF = "Lilr4b",
                     treat1 = "HFD",
                     treat2 = "Chow",
                     factorOrder = c("HFD","Chow"),

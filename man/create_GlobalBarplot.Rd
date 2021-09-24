@@ -2,7 +2,7 @@
 % Please edit documentation in R/CoNI_functions.R
 \name{create_GlobalBarplot}
 \alias{create_GlobalBarplot}
-\title{Vertex-class pairs profile of shared features between treatments}
+\title{Vertex-class pairs profile of shared features}
 \usage{
 create_GlobalBarplot(
   CompTreatTable,
@@ -12,11 +12,11 @@ create_GlobalBarplot(
   col1 = "red",
   col2 = "blue",
   maxpairs = 1,
-  nudgey = 0.5,
-  nudgex = 0.5,
   xlb = "Vertex-Class Pairs",
   ylb = "Number of pairs",
   szggrepel = 3.5,
+  nudgey = 0.5,
+  nudgex = 0.5,
   szaxisTxt = 12,
   szaxisTitle = 12
 )
@@ -36,15 +36,19 @@ create_GlobalBarplot(
 
 \item{maxpairs}{If number of class-vertex-pairs > maxpairs, display number pairs on top of bar}
 
+\item{xlb}{Name for x-axis}
+
+\item{ylb}{Name for the y-axis}
+
 \item{szggrepel}{Size ggrepel labels}
+
+\item{nudgey}{Nudge y ggrepel}
+
+\item{nudgex}{Nudge x ggrepel}
 
 \item{szaxisTxt}{Size axis text}
 
 \item{szaxisTitle}{Size axis title}
-
-\item{xlab}{Name for x-axis}
-
-\item{ylab}{Name for the y-axis}
 }
 \value{
 A barplot showing the vertex-class pairs profile of all shared edge features between treatments
@@ -53,9 +57,16 @@ A barplot showing the vertex-class pairs profile of all shared edge features bet
 This function will create a barplot from the output of Compare_VertexClasses_sharedEdgeFeatures using all shared Edge Features (e.g., genes).
 }
 \examples{
-create_GlobalBarplot(CompTreatTable = LCP_HFDvsChow,
+data(VertexClassesSharedGenes_HFDvsChow)
+create_GlobalBarplot(CompTreatTable = VertexClassesSharedGenes_HFDvsChow,
                      treat1 = "HFD",
                      treat2 = "Chow",
                      factorOrder = c("HFD","Chow"),
-                     maxpairs = 1,xlb = "Metabolite-class-pairs")
+                     col1="red",
+                     col2 ="blue",
+                     maxpairs = 1,
+                     szggrepel = 6,
+                     szaxisTxt = 15,
+                     szaxisTitle = 15,
+                     xlb = "Metabolite-pair classes")
 }

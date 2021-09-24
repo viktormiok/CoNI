@@ -2,13 +2,11 @@
 % Please edit documentation in R/CoNI_functions.R
 \name{getcolor}
 \alias{getcolor}
-\title{Get class rgb color
-This function gets the class rgb color of a specific (lipid) class}
+\title{Get class rgb color}
 \usage{
 getcolor(ClassM, tableColor)
 }
 \description{
-Get class rgb color
-This function gets the class rgb color of a specific (lipid) class
+Internal use. This function gets the class rgb color of a specific (lipid) class
 }
 \keyword{internal}

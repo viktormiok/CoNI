@@ -4,9 +4,9 @@
 \alias{check_outputDir}
 \title{Output directory}
 \usage{
-check_outputDir(outputDir, verb = verbose)
+check_outputDir(outputDir, verb)
 }
 \description{
-This function checks if the output directory exists and if it does not, it will create it
+Internal use. This function checks if the output directory exists and if it does not, it will create it
 }
 \keyword{internal}

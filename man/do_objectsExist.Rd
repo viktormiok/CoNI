@@ -4,7 +4,7 @@
 \alias{do_objectsExist}
 \title{Check if files exist}
 \usage{
-do_objectsExist(gene_exp, norm_metabo_dat, verb = verbose)
+do_objectsExist(gene_exp, norm_metabo_dat, verb)
 }
 \description{
 Internal use. This function tests if the input files exist, if they do not it will output an error and

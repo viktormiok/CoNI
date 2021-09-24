@@ -6,17 +6,18 @@
 \usage{
 generate_network(
   ResultsCoNI,
-  ColorVertexNetwork = TRUE,
+  colorVertexNetwork = TRUE,
   colorVertexTable,
   outputDir = "./",
   outputFileName = "ResultsCoNI",
-  Class = NULL
+  Class = NULL,
+  saveFiles = TRUE
 )
 }
 \arguments{
 \item{ResultsCoNI}{The input of the function are the results of CoNI.}
 
-\item{ColorVertexNetwork}{logical. If TRUE, the table colorVertexTable has to be provided to specify vertex colors}
+\item{colorVertexNetwork}{logical. If TRUE, the table colorVertexTable has to be provided to specify vertex colors}
 
 \item{colorVertexTable}{Table specifying the colors for the nodes (vertex features). The first column should contain the names matching the features of the vertex Data and the colors or other data can be specified in the rest of the columns}
 
@@ -25,6 +26,8 @@ generate_network(
 \item{outputFileName}{The name of the file used to create the network.}
 
 \item{Class}{Optional data frame with at least two columns, first column contains all vertex features and another column the vertex feature class (column named "Class"). Necessary for treatment comparisons based on class}
+
+\item{saveFiles}{logical. If FALSE TableForNetwork_`outputFileName`.csv and Network_`outputFileName`.graphml are not saved to disk}
 }
 \value{
 This function returns a network (igraph object) constructed from CoNI output. Basic network statistics are included in the network
@@ -37,14 +40,16 @@ This function creates a network using as input the output of CoNI and a table sp
 
 #Load color nodes table
 data(MetColorTable)
-
-#Alternatively assign the colors automatically for every vertex feature according to a "Class" column using the function 'assign_colorsAnnotation'
-MetColorTable<-MetColorTable[,-c(3,4)]#Remove the colors assigned previously
-MetColorTable<-assign_colorsAnnotation(MetColorTable)#assign colors according to "Class" column
+#Assign colors according to "Class" column
+MetColorTable<-assign_colorsAnnotation(MetColorTable)
+#Load CoNI results
+data(CoNIResultsHFDToy)
 
 #Generate Network
-HFDNetwork<-generate_network(ResultsCoNI = CoNIResults,
-                            colorNodesTable = MetColorTable,
-                            outputDir = "./HFD/",
-                            outputFileName = "HFD")
+HFDNetwork<-generate_network(ResultsCoNI = CoNIResultsHFDToy,
+                             colorVertexNetwork = TRUE,
+                             colorVertexTable = MetColorTable,
+                             outputDir = "./",
+                             outputFileName = "HFD",
+                             saveFiles = FALSE)
 }

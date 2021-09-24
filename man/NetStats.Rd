@@ -16,5 +16,19 @@ Returns network statistics. For more information on the statistics consult the i
 This function calculates simple network statistics and returns them as a dataframe
 }
 \examples{
+#Load color nodes table
+data(MetColorTable)
+#Assign colors according to "Class" column
+MetColorTable<-assign_colorsAnnotation(MetColorTable)
+#Load CoNI results
+data(CoNIResultsHFDToy)
+
+#Generate Network
+HFDNetwork<-generate_network(ResultsCoNI = CoNIResultsHFDToy,
+                             colorVertexNetwork = TRUE,
+                             colorVertexTable = MetColorTable,
+                             outputDir = "./",
+                             outputFileName = "HFD",
+                             saveFiles = FALSE)
 NetStats(HFDNetwork)
 }
