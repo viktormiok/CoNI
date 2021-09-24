@@ -3,8 +3,17 @@ Type: Package
 Title: Correlation Guided Network Integration (CoNI)
 Version: 0.1.0
 Date: 2021-09-23
-Author: José Manuel Monroy Kuhn, Valentina Klaus
-Maintainer: José Manuel Monroy Kuhn <nolozz@gmail.com>
+Authors@R: c(person(given = "José Manuel", 
+                    family = "Monroy Kuhn", 
+                    email = "nolozz@gmail.com",
+                    role = c("aut", "cre")),
+             person(given = "Dominik",
+                    family = "Lutter",
+                    email = "dominik.lutter@helmholtz-muenchen.de",
+                    role = c("ths")),
+             person(given = "Valentina",
+                    family = "Klaus",
+                    role = c("ctb")))
 Description: Integrates two numerical omics data sets from the same samples using partial correlations. The output can be represented as a network, bipartite graph or a hypergraph structure.
 License: GPL-3
 Encoding: UTF-8

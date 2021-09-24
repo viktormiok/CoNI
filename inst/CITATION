@@ -1,0 +1,35 @@
+citHeader("To cite CoNI in publications use:")
+
+citEntry(
+  entry    = "Article",
+  title    = "Correlation guided Network Integration (CoNI) reveals novel genes affecting hepatic metabolism",
+  author   = c(person("Valentina S.", "Klaus"),
+               person("Sonja C.", "Schriever"),
+               person("José Manuel","Monroy Kuhn"),
+               person("Andreas","Peter"),
+               person("Martin","Irmler"),
+               person("Janina","Tokarz"),
+               person("Cornelia","Prehn"),
+               person("Gabi","Kastenmüler"),
+               person("Johannes","Beckers"),
+               person("Jerzy","Adamsky"),
+               person("Timo D.","Müller"),
+               person("Alfred","Königsrainer"),
+               person("Martin","Heni"),
+               person("Matthias H.","Tschöp"),
+               person("Paul T.","Pfluger"),
+               person("Dominik","Lutter")
+              ),
+  journal  = "Molecular Metabolism",
+  year     = 2021,
+  volume   = 53,
+  pages    = 101295,
+  url      = "https://www.sciencedirect.com/science/article/pii/S221287782100140X",
+  DOI      = "10.1016/j.molmet.2021.101295",
+  textVersion = paste(
+   "Valentina S. Klaus, Sonja C. Schriever, José Manuel Monroy Kuhn, Andreas Peter, Martin Irmler, Janina Tokarz, Cornelia Prehn, Gabi Kastenmüller, Johannes Beckers, Jerzy Adamski, Alfred Königsrainer, Timo D. Müller, Martin Heni, Matthias H. Tschöp, Paul T. Pfluger, Dominik Lutter (2021).",
+   "Correlation guided Network Integration (CoNI) reveals novel genes affecting hepatic metabolism.",
+   "Molecular Metabolism,Volume 53,p. 101295.",
+   "DOI https://doi.org/10.1016/j.molmet.2021.101295."
+  )
+)

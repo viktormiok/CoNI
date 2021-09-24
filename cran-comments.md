@@ -1,6 +1,5 @@
 ## Test enviroments
 * local x86_64-apple-darwin17.0 (64-bit), R 4.0.3
-* win-builder (devel)
 
 ## R CMD check results
 There were no ERRORs or WARNINGs.

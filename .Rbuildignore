@@ -3,4 +3,5 @@
 ^CoNI\.Rproj$
 DataVignette
 cran-comments.md
+README.md
 ^doc$
