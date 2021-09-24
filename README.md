@@ -9,7 +9,7 @@ CoNI
 ### Installation
 Before installing `CoNI` a few dependencies are necessary:
 ```r
-dependencies<-c("igraph","doSNOW","doParallel","cocor","tidyverse","foreach","ggrepel","gplots","gridExtra","plyr","ppcor","tidyr","Hmisc")
+dependencies<-c("igraph","doParallel","cocor","tidyverse","foreach","ggrepel","gplots","gridExtra","plyr","ppcor","tidyr","Hmisc")
 
 `%notin%`<-Negate(`%in%`)
 for(package in dependencies){
