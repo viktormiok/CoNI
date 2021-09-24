@@ -25,13 +25,13 @@ library(CoNI)
 
 ## Introduction
 
-This vignette is an introduction to CoNI. Following this vignette, one can analyze the data in Valentina et al. (2021). CoNI is run using gene expression and metabolic data for the livers of two mice cohorts, one on a high-fat diet (HFD) and the other on a chow diet (Chow).
+This vignette is an introduction to `CoNI`. Following this vignette, one can analyze the data in Valentina et al. (2021). `CoNI` is run using gene expression and metabolic data for the livers of two mice cohorts, one on a high-fat diet (HFD) and the other on a chow diet (Chow).
 
 These data is already pre-processed, that is, normalized and low-count filtered. For more information see Valentina et al. (2021)
 
 #### Installation requirements
 
-CoNI requires a few R packages to function. Make sure they are installed before installing CoNI:
+`CoNI` requires a few R packages to function. Make sure they are installed before installing CoNI:
 ```{r install_dependencies}
 # dependencies<-c("igraph","doParallel","cocor","tidyverse","foreach","ggrepel","gplots","gridExtra","plyr","ppcor","tidyr","Hmisc")
 # 
@@ -49,7 +49,7 @@ CoNI requires a few R packages to function. Make sure they are installed before 
 # BiocManager::install("genefilter")
 ```
 
-Python3 is also required to run CoNI. Make sure it is installed and in your path. 
+Python3 is also required to run `CoNI`. Make sure it is installed and in your path. 
 
 
 ## Correlation guided Network integration (CoNI)
@@ -67,7 +67,7 @@ data(HFD_MetaboliteData) #Metabolite data
 data(HFD_GeneExpData) #Gene expression data
 ```
 
-Before running CoNI, one has to make sure the sample names between omics datasets match (as both omic data sets should come from the same samples). If they do not match, CoNI will throw an error.
+Before running `CoNI`, one has to make sure the sample names between omics datasets match (as both omic data sets should come from the same samples). If they do not match, `CoNI` will throw an error.
 
 ```{r matchRows}
 #Match rownames both omics data
@@ -80,7 +80,7 @@ HFD_metabo<-HFD_MetaboliteData
 HFD_gene<-HFD_GeneExpData
 ```
 
-To run CoNI, one can decide to keep metabolites (vertex-features) based on the significance of their pairwise correlations (padjustvertexD=FALSE) or do more stringent filtering by keeping only metabolites that significantly correlate after multiple-testing adjustment (padjustvertexD=TRUE). The user can also pre-filter the genes by keeping only those that significantly correlate with at least one metabolite (correlateDFs=TRUE).
+To run `CoNI`, one can decide to keep metabolites (vertex-features) based on the significance of their pairwise correlations (padjustvertexD=FALSE) or do more stringent filtering by keeping only metabolites that significantly correlate after multiple-testing adjustment (padjustvertexD=TRUE). The user can also pre-filter the genes by keeping only those that significantly correlate with at least one metabolite (correlateDFs=TRUE).
 
 Note: This run takes around 5 hours (12 cores, 32Gb of RAM). Adjust according to the available resources.
 ```{r CoNI_chow,eval=F, echo=T}
@@ -114,9 +114,9 @@ To speed up this vignette, load significant HFD results:
 data(CoNIResults_HFD)
 ```
 
-To speed up the computation, CoNI splits the edge Data into chunks, and it runs in parallel using the data of these chunks. Sometimes is necessary to tune 'split_number' to avoid running out of memory. For parallelization, CoNI uses the R package doSNOW (Microsoft Corporation and Weston, 2020). One can specify the number of cores with 'numCores'.
+To speed up the computation, `CoNI` splits the edge Data into chunks, and it runs in parallel using the data of these chunks. Sometimes is necessary to tune 'split_number' to avoid running out of memory. For parallelization, `CoNI` uses the R package doSNOW (Microsoft Corporation and Weston, 2020). One can specify the number of cores with 'numCores'.
 
-Internally in CoNI, the partial correlations are calculated with the R function ‘pcor.test’ of the package ppcor (Kim, 2015) and the Steiger tests with the function ‘cocor.dep.groups.overlap’ of the R package cocor (Diedenhofen and Musch, 2015).
+Internally in `CoNI`, the partial correlations are calculated with the R function ‘pcor.test’ of the package ppcor (Kim, 2015) and the Steiger tests with the function ‘cocor.dep.groups.overlap’ of the R package cocor (Diedenhofen and Musch, 2015).
 
 
 ### Create networks

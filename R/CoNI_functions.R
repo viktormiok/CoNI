@@ -1213,7 +1213,7 @@ tableLCFs_VFs<-function(CoNIResults,LCFs){
 #' @export
 Compare_Triplets<-function(Treat1_path,Treat2_path,
                            OutputName="Shared_Genes_and_Edges_Treat1vsTreat2.csv"){
-  path_C<-file.path(find.package("CoNI"),"extdata")
+  path_C<-file.path(find.package("CoNI"),"python")
   system(paste0('python3 ',path_C,'/Compare_Triplets.py ',Treat1_path," ",Treat2_path," ",OutputName))
   Output<-read.csv(OutputName,sep="\t")
   return(Output)
@@ -1245,7 +1245,7 @@ Compare_VertexClasses_sharedEdgeFeatures<-function(Treat1_path,Treat2_path,Outpu
   are_ClassColumnsPresent(DFTreat2)
 
 
-  path_C<-file.path(find.package("CoNI"),"extdata")
+  path_C<-file.path(find.package("CoNI"),"python")
   system(paste0('python3 ',path_C,'/ComparisonClasses.py ',Treat1_path," ",Treat2_path," ",OutputName," ",Treat1Name," ",Treat2Name))
   Output<-read.csv(OutputName,sep="\t")
   Output[,Treat1Name]<-as.numeric(gsub("Pair Class Missing",0,Output[,Treat1Name]))

@@ -3,7 +3,7 @@
 #' @name GeneExpToy
 #' @docType data
 #' @author Jose Manuel Monroy \email{nolozz@gmail.com}
-#' @references \url{https://doi.org/10.1016/j.molmet.2021.101295}
+#' @references \doi{10.1016/j.molmet.2021.101295}
 #' @keywords data toydata
 NULL
 
@@ -12,7 +12,7 @@ NULL
 #' @name MetaboExpToy
 #' @docType data
 #' @author Jose Manuel Monroy \email{nolozz@gmail.com}
-#' @references \url{https://doi.org/10.1016/j.molmet.2021.101295}
+#' @references \doi{10.1016/j.molmet.2021.101295}
 #' @keywords data toydata
 NULL
 
@@ -21,7 +21,7 @@ NULL
 #' @name MetColorTable
 #' @docType data
 #' @author Jose Manuel Monroy \email{nolozz@gmail.com}
-#' @references \url{https://doi.org/10.1016/j.molmet.2021.101295}
+#' @references \doi{10.1016/j.molmet.2021.101295}
 #' @keywords data toydata
 NULL
 
@@ -30,7 +30,7 @@ NULL
 #' @name CoNIResultsHFDToy
 #' @docType data
 #' @author Jose Manuel Monroy \email{nolozz@gmail.com}
-#' @references \url{https://doi.org/10.1016/j.molmet.2021.101295}
+#' @references \doi{10.1016/j.molmet.2021.101295}
 #' @keywords data toydata
 NULL
 
@@ -41,7 +41,7 @@ NULL
 #' @name VertexClassesSharedGenes_HFDvsChow
 #' @docType data
 #' @author Jose Manuel Monroy \email{nolozz@gmail.com}
-#' @references \url{https://doi.org/10.1016/j.molmet.2021.101295}
+#' @references \doi{10.1016/j.molmet.2021.101295}
 #' @keywords data toydata
 NULL
 
@@ -52,7 +52,7 @@ NULL
 #' @name Chow_MetaboliteData
 #' @docType data
 #' @author Jose Manuel Monroy \email{nolozz@gmail.com}
-#' @references \url{https://doi.org/10.1016/j.molmet.2021.101295}
+#' @references \doi{10.1016/j.molmet.2021.101295}
 #' @keywords data
 NULL
 
@@ -61,7 +61,7 @@ NULL
 #' @name Chow_GeneExpData
 #' @docType data
 #' @author Jose Manuel Monroy \email{nolozz@gmail.com}
-#' @references \url{https://doi.org/10.1016/j.molmet.2021.101295}
+#' @references \doi{10.1016/j.molmet.2021.101295}
 #' @keywords data
 NULL
 
@@ -70,7 +70,7 @@ NULL
 #' @name HFD_MetaboliteData
 #' @docType data
 #' @author Jose Manuel Monroy \email{nolozz@gmail.com}
-#' @references \url{https://doi.org/10.1016/j.molmet.2021.101295}
+#' @references \doi{10.1016/j.molmet.2021.101295}
 #' @keywords data
 NULL
 
@@ -79,7 +79,7 @@ NULL
 #' @name HFD_GeneExpData
 #' @docType data
 #' @author Jose Manuel Monroy \email{nolozz@gmail.com}
-#' @references \url{https://doi.org/10.1016/j.molmet.2021.101295}
+#' @references \doi{10.1016/j.molmet.2021.101295}
 #' @keywords data
 NULL
 
@@ -88,7 +88,7 @@ NULL
 #' @name MetaboliteAnnotation
 #' @docType data
 #' @author Jose Manuel Monroy \email{nolozz@gmail.com}
-#' @references \url{https://doi.org/10.1016/j.molmet.2021.101295}
+#' @references \doi{10.1016/j.molmet.2021.101295}
 #' @keywords data
 NULL
 
@@ -97,7 +97,7 @@ NULL
 #' @name CoNIResults_Chow
 #' @docType data
 #' @author Jose Manuel Monroy \email{nolozz@gmail.com}
-#' @references \url{https://doi.org/10.1016/j.molmet.2021.101295}
+#' @references \doi{10.1016/j.molmet.2021.101295}
 #' @keywords data
 NULL
 
@@ -106,6 +106,6 @@ NULL
 #' @name CoNIResults_HFD
 #' @docType data
 #' @author Jose Manuel Monroy \email{nolozz@gmail.com}
-#' @references \url{https://doi.org/10.1016/j.molmet.2021.101295}
+#' @references \doi{10.1016/j.molmet.2021.101295}
 #' @keywords data
 NULL

@@ -8,7 +8,7 @@
 Toy data comparison Vertex classes shared edge featuresHFD vs Chow
 }
 \references{
-\url{https://doi.org/10.1016/j.molmet.2021.101295}
+\doi{10.1016/j.molmet.2021.101295}
 }
 \author{
 Jose Manuel Monroy \email{nolozz@gmail.com}

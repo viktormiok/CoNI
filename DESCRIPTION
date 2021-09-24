@@ -34,3 +34,4 @@ Imports: igraph (>= 1.2.6),
 Suggests: 
     kableExtra (>= 1.3.2), knitr (>= 1.31), rmarkdown (>= 2.6)
 VignetteBuilder: knitr
+SystemRequirements: python3
