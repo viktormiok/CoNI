@@ -324,8 +324,6 @@ CoNI<- function(edgeD, vertexD,
       # close(pb)
       stopCluster(cl)
 
-      #Get rid of rows with only NAs --> Not working...
-      #df_results<-df_results[rowSums(is.na(df_results)) != ncol(df_results), ]
       df_results<-as.data.frame(df_results)
 
       #Set column names
@@ -527,14 +525,6 @@ CoNI<- function(edgeD, vertexD,
 
     #Remove weird format
     df_results<-as.data.frame(df_results)
-    # df_results<-sapply(df_results[,1:ncol(df_results)],function(x){
-    #     x<-unlist(x)})
-    # df_results<-as.data.frame(df_results)
-    #
-    # #Set numeric columns as numeric
-    # df_results[,4:13]<-sapply(df_results[, 4:13], function(x){
-    #   as.numeric(as.character(x))
-    # })
 
 
     #Set column names
