@@ -114,7 +114,7 @@ To speed up this vignette, load significant HFD results:
 data(CoNIResults_HFD)
 ```
 
-To speed up the computation, `CoNI` splits the edge Data into chunks, and it runs in parallel using the data of these chunks. Sometimes is necessary to tune 'split_number' to avoid running out of memory. For parallelization, `CoNI` uses the R package doSNOW (Microsoft Corporation and Weston, 2020). One can specify the number of cores with 'numCores'.
+To speed up the computation, `CoNI` splits the edge Data into chunks, and it runs in parallel using the data of these chunks. Sometimes is necessary to tune 'split_number' to avoid running out of memory. For parallelization, `CoNI` uses the R package doParallel (Microsoft Corporation and Steve Weston, 2020). One can specify the number of cores with 'numCores'.
 
 Internally in `CoNI`, the partial correlations are calculated with the R function ‘pcor.test’ of the package ppcor (Kim, 2015) and the Steiger tests with the function ‘cocor.dep.groups.overlap’ of the R package cocor (Diedenhofen and Musch, 2015).
 
@@ -307,7 +307,7 @@ The resulting bipartite graph can be uploaded in Cytoscape for further visualiza
 
 It is also possible to obtain a hypergraph incidence matrix instead of a bipartite graph
 ```{r}
-Chow_HypergraphIncidenceM<-createBipartiteGraph("./TableForNetwork_Chow.csv",MetaboliteAnnotation,incidenceMatrix = T)
+Chow_HypergraphIncidenceM<-createBipartiteGraph("./TableForNetwork_Chow.csv",MetaboliteAnnotation,incidenceMatrix = TRUE)
 ```
 
 
@@ -315,7 +315,7 @@ Chow_HypergraphIncidenceM<-createBipartiteGraph("./TableForNetwork_Chow.csv",Met
 ## Comparison between treatments
 
 ### Triplet comparison
-Exact triplet matching can be done as follows:
+Exact triplet matching (metabolite pair - gene) can be done as follows:
 
 ```{r triplet_comparison}
 Compare_Triplets(Treat1_path = "./TableForNetwork_Chow.csv",

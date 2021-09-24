@@ -9,5 +9,3 @@ There was 1 NOTE:
 Maintainer: ‘José Manuel Monroy Kuhn <nolozz@gmail.com>’
 
 New submission
-
-## Downstream dependencies
