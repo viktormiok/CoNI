@@ -101,7 +101,8 @@ rownames(chow_metabo)<-rownames(chow_gene)
 #and split_number should be adjusted accordingly
 #See vignette for an example
 #Running CoNI with only a tiny dataset
- CoNIResultsHFD <- CoNI(hfd_gene[,1:3],hfd_metabo[,1:3],
+\donttest{
+ CoNIResultsHFD <- CoNI(hfd_gene,hfd_metabo,
                         numCores = 2,
                         onlySgRes = FALSE,
                         filter_highVarianceEdge=FALSE,
@@ -112,6 +113,6 @@ rownames(chow_metabo)<-rownames(chow_gene)
                         saveFiles = FALSE,
                         splitedgeD = FALSE,
                         outputDir = "./")
-
+}
 
 }

@@ -48,7 +48,8 @@
 #' #and split_number should be adjusted accordingly
 #' #See vignette for an example
 #' #Running CoNI with only a tiny dataset
-#'  CoNIResultsHFD <- CoNI(hfd_gene[,1:3],hfd_metabo[,1:3],
+#' \donttest{
+#'  CoNIResultsHFD <- CoNI(hfd_gene,hfd_metabo,
 #'                         numCores = 2,
 #'                         onlySgRes = FALSE,
 #'                         filter_highVarianceEdge=FALSE,
@@ -59,7 +60,7 @@
 #'                         saveFiles = FALSE,
 #'                         splitedgeD = FALSE,
 #'                         outputDir = "./")
-#'
+#'}
 #'
 #' @import doParallel
 #' @import parallel
@@ -1204,7 +1205,22 @@ tableLCFs_VFs<-function(CoNIResults,LCFs){
 Compare_Triplets<-function(Treat1_path,Treat2_path,
                            OutputName="Shared_Genes_and_Edges_Treat1vsTreat2.csv"){
   path_C<-file.path(find.package("CoNI"),"python")
-  system(paste0('python3 ',path_C,'/Compare_Triplets.py ',Treat1_path," ",Treat2_path," ",OutputName))
+  runPython<-tryCatch({system(paste0('python3 ',path_C,'/Compare_Triplets.py ',Treat1_path," ",Treat2_path," ",OutputName))},
+           error=function(cond) {
+             # Choose a return value in case of error
+             return('Error')
+           }
+  )
+  if(runPython==9009 || runPython == 127 ||  runPython == 2){
+    runPython<-tryCatch({system(paste0('python ',path_C,'/Compare_Triplets.py ',Treat1_path," ",Treat2_path," ",OutputName))},
+                        error=function(cond) {
+                                   # Choose a return value in case of error
+                                   return('Error')
+                                 }
+    )
+    if(runPython==9009 || runPython == 127 ||  runPython == 2){stop("Make sure python3 is installed and in your path")}
+  }
+  # system(paste0('python3 ',path_C,'/Compare_Triplets.py ',Treat1_path," ",Treat2_path," ",OutputName))
   Output<-read.csv(OutputName,sep="\t")
   return(Output)
 }
@@ -1236,7 +1252,22 @@ Compare_VertexClasses_sharedEdgeFeatures<-function(Treat1_path,Treat2_path,Outpu
 
 
   path_C<-file.path(find.package("CoNI"),"python")
-  system(paste0('python3 ',path_C,'/ComparisonClasses.py ',Treat1_path," ",Treat2_path," ",OutputName," ",Treat1Name," ",Treat2Name))
+  runPython<-tryCatch({system(paste0('python3 ',path_C,'/ComparisonClasses.py ',Treat1_path," ",Treat2_path," ",OutputName," ",Treat1Name," ",Treat2Name))},
+                      error=function(cond) {
+                        # Choose a return value in case of error
+                        return('Error')
+                      }
+  )
+  if(runPython==9009 || runPython == 127 ||  runPython == 2){
+    runPython<-tryCatch({system(paste0('python ',path_C,'/ComparisonClasses.py ',Treat1_path," ",Treat2_path," ",OutputName," ",Treat1Name," ",Treat2Name))},
+                        error=function(cond) {
+                          # Choose a return value in case of error
+                          return('Error')
+                        }
+    )
+    if(runPython==9009 || runPython == 127 ||  runPython == 2){stop("Make sure python3 is installed and in your path")}
+  }
+  # system(paste0('python3 ',path_C,'/ComparisonClasses.py ',Treat1_path," ",Treat2_path," ",OutputName," ",Treat1Name," ",Treat2Name))
   Output<-read.csv(OutputName,sep="\t")
   Output[,Treat1Name]<-as.numeric(gsub("Pair Class Missing",0,Output[,Treat1Name]))
   Output[,Treat2Name]<-as.numeric(gsub("Pair Class Missing",0,Output[,Treat2Name]))
