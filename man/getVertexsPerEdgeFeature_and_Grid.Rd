@@ -10,7 +10,7 @@ getVertexsPerEdgeFeature_and_Grid(
   Treat2,
   Annotation,
   chunks = 3,
-  ggrep = T,
+  ggrep = TRUE,
   xlb = "Edge Feature",
   onlyT = FALSE,
   small = FALSE,
@@ -39,7 +39,7 @@ getVertexsPerEdgeFeature_and_Grid(
 \item{...}{Other parameters for inner functions, mainly ggplot2 visual parameters}
 }
 \value{
-Two side-by-side barplots, one for each treatment, showing the number of vertex features per class for every shared edge feature
+A gtable containing side-by-side barplots, one for each treatment, showing the number of vertex features per class for every shared edge feature
 }
 \description{
 This function creates a grid of barplots. The barplot of one side depicts the number of class vertex features per edge feature for treatment 1 and the other side the same barplot for treatment 2. Results of both Treatments are side by side for better comparison.

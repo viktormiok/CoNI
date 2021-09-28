@@ -18,7 +18,7 @@ Compare_Triplets(
 \item{OutputName}{Output file name with path}
 }
 \value{
-The shared triplets between two CoNI runs
+A data.frame with the shared triplets (vertex1 vertex2 edge_feature) between two CoNI runs
 }
 \description{
 Compare vertexFeature-vertexFeature-edgeFeature between two treatments, that is, find the shared triplets between two different CoNI runs.

@@ -23,7 +23,7 @@
 #' @param edgeDname File name extension for the edge features that significantly correlate with at least one vertex feature. This file will be read if the function is called again with the same input and with delPrevious=FALSE
 #' @param vertexDname File name extension for the vertex features that are involved in at least one significant correlation. This file will be read if the function is called again with the same input and with delPrevious=FALSE
 #' @param saveFiles logical. If FALSE CoNI function will not save any file to disk
-#' @return CoNI returns a table with partial correlation coefficients for every triplet and the pvalue of the Steiger tests
+#' @return CoNI returns a data.frame with the correlation coefficients of the vertex-pairs, the partial correlation coefficients for every triplet, and the pvalue of the Steiger tests
 #' @examples
 #' #Run CoNI
 #'
@@ -82,9 +82,9 @@ CoNI<- function(edgeD, vertexD,
                 delPrevious = FALSE, delIntermediaryFiles = TRUE,
                 iteration_start = 1, numCores = NULL,
                 verbose = TRUE,
-                more_coef=FALSE,
+                more_coef = FALSE,
                 edgeDname = "edgeD",vertexDname = "vertexD",
-                saveFiles=TRUE) {
+                saveFiles = TRUE) {
 
   j <- NULL
   #Set delPrevious to FALSE if iteration start > 1
@@ -92,7 +92,7 @@ CoNI<- function(edgeD, vertexD,
     if(verbose){cat('Iteration start > 1')}
     delPrevious<-FALSE
     file_list <- list.files(outputDir)
-    file_list<-file_list[grep("CoNIOutputSplit",file_list)]
+    file_list <- file_list[grep("CoNIOutputSplit", file_list)]
     if(length(file_list) < (iteration_start-1)){
       stop("Previous files were not found in the output directory")
     }
@@ -103,16 +103,16 @@ CoNI<- function(edgeD, vertexD,
   checkInputParameters(ParaList)
 
   #Check if input objects are defined
-  do_objectsExist(edgeD,vertexD,verbose)
+  do_objectsExist(edgeD, vertexD,verbose)
 
   #Start measuring time
   start_time <- Sys.time()
 
   #Check if output directory exists
-  check_outputDir(outputDir,verbose)
+  check_outputDir(outputDir, verbose)
 
   #Check if previous files are present and delete accordingly
-  check_previous(delPrevious,iteration=iteration_start,outDir=outputDir,verb=verbose)
+  check_previous(delPrevious, iteration = iteration_start, outDir = outputDir, verb = verbose)
 
   #Split number cannot be less than 2
   if(split_number < 2){
@@ -121,30 +121,30 @@ CoNI<- function(edgeD, vertexD,
     }
 
   #Test if sample names are the same in both data sets
-  compare_sampleNames(edgeD,vertexD)
+  compare_sampleNames(edgeD, vertexD)
 
   #Make sure column names are appropiate
-  colnames(edgeD)<-make.names(colnames(edgeD),unique=TRUE)
-  colnames(vertexD)<-make.names(colnames(vertexD),unique=TRUE)
+  colnames(edgeD) <- make.names(colnames(edgeD), unique = TRUE)
+  colnames(vertexD) <- make.names(colnames(vertexD), unique = TRUE)
 
-  if(!file.exists(paste(outputDir,"KeptFeatures_",vertexDname,".csv",sep=""))){
+  if(!file.exists(paste(outputDir, "KeptFeatures_", vertexDname, ".csv", sep = ""))){
     #Get significant correlations between metabolites
     if(verbose){print("Calculating correlations of vertex Data")}
     normvertexD_Tablesignificant <- sig_correlation2(input_edgeD = vertexD,padj = padjustvertexD,verb = verbose)
     #Get indexes for the rows and columns for the metabo data
-    normvertexD_Tablesignificant$RowIndex <- apply(normvertexD_Tablesignificant,1,function(x){return(which(colnames(vertexD)[1:ncol(vertexD)]==x[1]))})
-    normvertexD_Tablesignificant$ColIndex <- apply(normvertexD_Tablesignificant,1,function(x){return(which(colnames(vertexD)[1:ncol(vertexD)]==x[2]))})
+    normvertexD_Tablesignificant$RowIndex <- apply(normvertexD_Tablesignificant, 1, function(x){return(which(colnames(vertexD)[1:ncol(vertexD)]==x[1]))})
+    normvertexD_Tablesignificant$ColIndex <- apply(normvertexD_Tablesignificant, 1, function(x){return(which(colnames(vertexD)[1:ncol(vertexD)]==x[2]))})
     if(saveFiles){
-      fwrite(normvertexD_Tablesignificant,paste(outputDir,"KeptFeatures_",vertexDname,".csv",sep=""))
-      normvertexD_Tablesignificant <- fread(paste(outputDir,"KeptFeatures_",vertexDname,".csv",sep=""))
+      fwrite(normvertexD_Tablesignificant, paste(outputDir, "KeptFeatures_", vertexDname, ".csv", sep=""))
+      normvertexD_Tablesignificant <- fread(paste(outputDir, "KeptFeatures_", vertexDname, ".csv", sep=""))
     }
   }else{
-    normvertexD_Tablesignificant <- fread(paste(outputDir,"KeptFeatures_",vertexDname,".csv",sep=""))
+    normvertexD_Tablesignificant <- fread(paste(outputDir, "KeptFeatures_", vertexDname, ".csv", sep=""))
   }
 
   #Get low variance edge features (e.g. genes)
   if(filter_highVarianceEdge){
-    edgeD<-get_lowvarFeatures(edgeD) #This step was criticised
+    edgeD <- get_lowvarFeatures(edgeD) #This step was criticised
     if(!nrow(edgeD)>0){
       stop("After filtering high variance edge features none remained")
     }
@@ -154,7 +154,7 @@ CoNI<- function(edgeD, vertexD,
   #edgeD<-as.data.frame(edgeD)
 
   #Get only those genes that correlate with the metabolites
-  if(correlateDFs & !file.exists(paste(outputDir,"KeptFeatures_",edgeDname,".csv",sep=""))){
+  if(correlateDFs & !file.exists(paste(outputDir, "KeptFeatures_", edgeDname, ".csv", sep=""))){
     if(verbose){print("Calculating correlations between vertex Data and edge Data")}
 
     #Get Column indices of all metabolites
@@ -185,7 +185,7 @@ CoNI<- function(edgeD, vertexD,
       split_number<-round(ncol(edgeD)*0.02)
       if(split_number<1){
         print("Cannot split less than 2")
-        splitedgeD<-T
+        splitedgeD<-TRUE
         split_number<-round(ncol(edgeD)*0.02)
       }
     }
@@ -523,9 +523,24 @@ CoNI<- function(edgeD, vertexD,
 
     # close(pb)
     stopCluster(cl)
-
     #Remove weird format
-    df_results<-as.data.frame(df_results)
+    df_results<-as.data.frame(df_results) #create data frame
+    #Remove nested list format
+    results<-list()
+    for(i in 1:ncol(df_results)){#loop columns
+      resultC<-unlist(df_results[i]) #unlist column
+      results[[i]]<-unname(resultC) #save result to list
+    }
+    df_results<-as.data.frame(do.call(cbind,results)) #cbind list to create data frame
+
+
+    # df_results<-sapply(df_results[,1:ncol(df_results)],function(x){
+    #     x<-unlist(x)})
+    # df_results<-as.data.frame(df_results)
+    #Set numeric columns as numeric
+    df_results[,4:13]<-sapply(df_results[, 4:13], function(x){
+    as.numeric(as.character(x))
+    })
 
 
     #Set column names
@@ -569,6 +584,7 @@ CoNI<- function(edgeD, vertexD,
 #' @description Internal use. Function  to check if input parameters are of the right class
 #' @keywords internal
 #' @importFrom methods is
+#' @return No return value, called for side effects
 checkInputParameters<-function(ParaList){
   #Functions used
   matchLs<-function(L1,L2){
@@ -657,6 +673,7 @@ checkInputParameters<-function(ParaList){
 #' @description Internal use. This function tries to write a table with fread, if it fails it returns "NA"
 #' @keywords internal
 #' @importFrom data.table fwrite
+#' @return Returns NA if it fails to write file to memory, otherwise no return value
 writeTable <- function(results_write,num_cores,outputDir,iteration) {
   out <- tryCatch(
     {
@@ -677,15 +694,16 @@ writeTable <- function(results_write,num_cores,outputDir,iteration) {
 #' @description Internal use. This function checks previous files and deletes according to the User input option
 #' Requires some modifications...
 #' @keywords internal
+#' @return No return value, called for side effects
 check_previous<-function(del,iteration,outDir,verb){
   if(del){
     filesDel<-unique(c(list.files(outDir,pattern = "^CoNIOutput"),list.files(outDir,pattern = "^.*_Raw")))
     if(length(filesDel)>0){
-      sapply(filesDel, function(f){file.remove(paste0(outDir,f))})
+      sapply(filesDel, function(fi){file.remove(paste0(outDir,fi))})
     }
     filesDel2<-list.files(outDir,pattern = "KeptFeatures_")
     if(length(filesDel2)>0){
-      sapply(filesDel2, function(f){file.remove(paste0(outDir,f))})
+      sapply(filesDel2, function(fi){file.remove(paste0(outDir,fi))})
     }
   }else if(iteration>1){
     #check if there are files... If there are none... Stop
@@ -696,7 +714,7 @@ check_previous<-function(del,iteration,outDir,verb){
   }else{
     filesDel<-list.files(outDir,pattern = "CoNIOutputSplit")
     if(length(filesDel)>0){
-      sapply(filesDel, function(f){file.remove(paste0(outDir,f))})
+      sapply(filesDel, function(fi){file.remove(paste0(outDir,fi))})
     }
   }
 }
@@ -704,10 +722,11 @@ check_previous<-function(del,iteration,outDir,verb){
 #' Delete intermediary files
 #' @description Internal use. This function deletes intermediary files.
 #' @keywords internal
+#' @return No return value, called for side effects
 delIntFiles<-function(del,outDir){
   if(del){
     filesDel<-list.files(outDir,pattern = "CoNIOutputSplit")
-    sapply(filesDel, function(f){file.remove(paste0(outDir,f))})
+    sapply(filesDel, function(fi){file.remove(paste0(outDir,fi))})
   }
 
 }
@@ -716,6 +735,7 @@ delIntFiles<-function(del,outDir){
 #' @description Internal use. This function tests if the input files exist, if they do not it will output an error and
 #' end CoNI
 #' @keywords internal
+#' @return No return value, called for side effects
 do_objectsExist<-function(gene_exp,norm_metabo_dat,verb){
   if(missing(gene_exp) | missing(norm_metabo_dat)){
     message("Input objects are missing")
@@ -730,6 +750,7 @@ do_objectsExist<-function(gene_exp,norm_metabo_dat,verb){
 #' Split dataset
 #' @description Internal use. This function wills split the 'big' omics data into smaller data frames to improve computations, to avoid running out of memory.
 #' @keywords internal
+#' @return A list of data.frames
 split_df<-function(AbundantDF,numberSplitDF_2=2){
   dt_list<-list()
   if(ncol(AbundantDF) %% numberSplitDF_2 !=0){
@@ -763,6 +784,7 @@ split_df<-function(AbundantDF,numberSplitDF_2=2){
 #' Compare sample names
 #' @description Internal use. This function compares the sample names between the two datasets provided. If names do not match CoNI stops and outputs an error message.
 #' @keywords internal
+#' @return No return value, called for side effects
 compare_sampleNames<-function(df1,df2){
   Rowsdf1<-rownames(df1)[order(rownames(df1))]
   Rowsdf2<-rownames(df2)[order(rownames(df2))]
@@ -775,31 +797,12 @@ compare_sampleNames<-function(df1,df2){
   }
 }
 
-#' Get rid NA
-#' @description Internal use. This function gets rid of columns and/or rows with at least one NA
-#' @keywords internal
-get_ridNA<-function(df, type='column'){
-  `%notin%` <- Negate(`%in%`)
-  if(type %notin% c('column','row','both') || !is.data.frame(df)){
-    print('Choose column, row or both, and provide a data frame')
-    stop('Exit function')
-  }
-
-  if(type=='both'){
-    df<-df[rowSums(is.na(df)) == 0 , colSums(is.na(df)) == 0]
-  }else if(type=='column'){
-    df<-df[ , colSums(is.na(df)) == 0]
-  }else{
-    df<-df[rowSums(is.na(df)) == 0 , ]
-  }
-  df
-}
-
 #' Flatten
 #' @description Internal use. This function gets the upper part of the matrix after calculating the correlation coefficients between all pairs of elements
 #' cormat : matrix of the correlation coefficients
 #' pmat : matrix of the correlation p-values
 #' @keywords internal
+#' @return A data.frame with all pairwise correlations of the input elements and their respective p-values
 flattenCorrMatrix <- function(cormat, pmat) {
   ut <- upper.tri(cormat)
   data.frame(
@@ -814,6 +817,7 @@ flattenCorrMatrix <- function(cormat, pmat) {
 #' @description Internal use. This function calculates the pairwise correlations of a matrix (it uses Hmisc::rcorr function) and gets the significant correlations
 #' @keywords internal
 #' @importFrom Hmisc rcorr
+#' @return A data.frame with the significant correlations of a correlation matrix
 sig_correlation2<-function(input_edgeD,padj=TRUE,method="BH", verb){
   corr<-rcorr(as.matrix(input_edgeD),type='p')
   corr_table<-flattenCorrMatrix(corr$r,corr$P)
@@ -837,6 +841,7 @@ sig_correlation2<-function(input_edgeD,padj=TRUE,method="BH", verb){
 #' @description Internal use. This function input are two data frames (e.g. metabolites and genes). It calculates the correlation matrix and creates a table with only significant pairs. No correction for multiple testing is done
 #' @keywords internal
 #' @importFrom stats pt
+#' @return A data.frame with vertex-edge significant correlation coefficients and their p-values
 sig_correlation2Dfs<-function(metabolite_data,gene_expression){
   n <- t(!is.na(metabolite_data)) %*% (!is.na(gene_expression)) # same as count.pairwise(x,y) from psych package/ Matches number of samples
   r <- cor(metabolite_data, gene_expression, use = "pairwise.complete.obs") # MUCH MUCH faster than corr.test()
@@ -883,6 +888,7 @@ sig_correlation2Dfs<-function(metabolite_data,gene_expression){
 #' @import genefilter
 #' @importFrom genefilter rowVars
 #' @keywords internal
+#' @return A data.frame where low variance features were removed
 get_lowvarFeatures<-function(df){
   Var<-NULL
   df<-as.data.frame(t(df))
@@ -896,6 +902,7 @@ get_lowvarFeatures<-function(df){
 #' @description Internal use. This function reads the output split files generated by CoNI and generates a single result object. It is slow. Probably there are other faster alternatives.
 #' @keywords internal
 #' @importFrom data.table fread
+#' @return A single data.table with the results of CoNI
 merge_outpuSplitFiles<-function(outputDir){
   #outputDir<-gsub('\\.','',outputDir)
   #outputDir<-gsub('\\/','',outputDir)
@@ -917,6 +924,7 @@ merge_outpuSplitFiles<-function(outputDir){
 #' Output directory
 #' @description Internal use. This function checks if the output directory exists and if it does not, it will create it
 #' @keywords internal
+#' @return No return value, called for side effects
 check_outputDir<-function(outputDir,verb){
   if (file.exists(paste(outputDir,sep=""))) {
     if(verb){print("Output directory exists")}
@@ -937,7 +945,19 @@ check_outputDir<-function(outputDir,verb){
 #' @param saveFiles logical. If FALSE TableForNetwork_`outputFileName`.csv and Network_`outputFileName`.graphml are not saved to disk
 #' @importFrom plyr ddply
 #' @importFrom igraph graph_from_data_frame simplify V E degree hub_score transitivity closeness betweenness eigen_centrality centr_betw centr_clo centr_degree edge_betweenness write_graph
-#' @return This function returns a network (igraph object) constructed from CoNI output. Basic network statistics are included in the network
+#' @return Returns an igraph object (network) constructed from ResultsCoNI. The network includes the following network statistics
+#' \itemize{
+##'  \item{"degree"}{The number of the vertex adjacent edges}
+##'  \item{"hub_score"}{The principal eigenvector of A*t(A), where A is the adjacency matrix of the graph}
+##'  \item{"transitivity"}{Probability that the adjacent vertices of a vertex are connected}
+##'  \item{"closeness"}{Steps required to access every other vertex from a given vertex}
+##'  \item{"betweenness"}{(roughly) The number of geodesics (shortest paths) going through a vertex or an edge}
+##'  \item{"eigen_centrality"}{Takes a graph (graph) and returns the eigenvector centralities of positions v within it}
+##'  \item{"centralized_betweenness"}{The vertice-level centrality score according to the betweenness of vertices}
+##'  \item{"centralized_closeness"}{The vertice-level centrality score according to the closeness of vertices}
+##'  \item{"centralized_degree"}{The vertice-level centrality score according to the degrees of vertices}
+##' }
+##' For more details see igraph package
 #' @examples
 #' #Generate Network
 #'
@@ -1014,11 +1034,11 @@ generate_network<-function(ResultsCoNI,
     write.csv(clinksd,paste(outputDir,"TableForNetwork_",outputFileName,".csv",sep=""),row.names=FALSE)
   }
 
-  cnodes <- data.frame("Name"=unique(c(as.character(df$from),as.character(df$to))),stringsAsFactors=F)#Get the nodes (metabolites)
+  cnodes <- data.frame("Name"=unique(c(as.character(df$from),as.character(df$to))),stringsAsFactors=FALSE)#Get the nodes (metabolites)
 
   if(colorVertexNetwork){
     #Assign colors to nodes
-    m <- merge(cnodes,colorVertexTable,by.x="Name",by.y=colnames(colorVertexTable)[1],all.x=T)
+    m <- merge(cnodes,colorVertexTable,by.x="Name",by.y=colnames(colorVertexTable)[1],all.x=TRUE)
     cnodesd <- m
   }else{
     cnodesd <- cnodes
@@ -1028,23 +1048,23 @@ generate_network<-function(ResultsCoNI,
   #colnames(clinksd)[10] <- "weight"
 
   #Create graph
-  netd <- igraph::graph_from_data_frame(d=clinksd, vertices=cnodesd, directed=F)
-  netd_simple <- igraph::simplify(netd,remove.multiple=F)
+  netd <- igraph::graph_from_data_frame(d=clinksd, vertices=cnodesd, directed=FALSE)
+  netd_simple <- igraph::simplify(netd,remove.multiple=FALSE)
 
   #Add network statistics
   igraph::V(netd_simple)$degree<-degree(netd_simple, mode="all")
   igraph::V(netd_simple)$hub_score<-hub_score(netd_simple, weights=NA)$vector
   igraph::V(netd_simple)$transitivity<-transitivity(netd_simple, type="local")
   igraph::V(netd_simple)$closeness<-closeness(netd_simple, mode="all", weights=NA)
-  igraph::V(netd_simple)$betweenness<-betweenness(netd_simple, directed=F, weights=NA)
-  igraph::V(netd_simple)$eigen_centrality<-eigen_centrality(netd_simple, directed=F, weights=NA)$vector
-  igraph::V(netd_simple)$centralized_betweenness<-centr_betw(netd_simple, directed=F, normalized=T)$res
-  igraph::V(netd_simple)$centralized_closeness<-centr_clo(netd_simple, mode="all", normalized=T)$res
-  igraph::V(netd_simple)$centralized_degree<-centr_degree(netd_simple, mode="all", normalized=T)$res
+  igraph::V(netd_simple)$betweenness<-betweenness(netd_simple, directed=FALSE, weights=NA)
+  igraph::V(netd_simple)$eigen_centrality<-eigen_centrality(netd_simple, directed=FALSE, weights=NA)$vector
+  igraph::V(netd_simple)$centralized_betweenness<-centr_betw(netd_simple, directed=FALSE, normalized=TRUE)$res
+  igraph::V(netd_simple)$centralized_closeness<-centr_clo(netd_simple, mode="all", normalized=TRUE)$res
+  igraph::V(netd_simple)$centralized_degree<-centr_degree(netd_simple, mode="all", normalized=TRUE)$res
   #V(netd_simple)$membership_community_edgeBetweenes<-cluster_edge_betweenness(netd_simple,directed = F)$membership
 
   #Add edge betweeness
-  igraph::E(netd_simple)$betweeness <- edge_betweenness(netd_simple, directed=F, weights=NA)
+  igraph::E(netd_simple)$betweeness <- edge_betweenness(netd_simple, directed=FALSE, weights=NA)
 
   if(saveFiles & saveNetwork){
     write_graph(netd_simple,file=paste0(outputDir,"Network_",outputFileName,".graphml"),format="graphml")
@@ -1058,7 +1078,7 @@ generate_network<-function(ResultsCoNI,
 #' @param ResultsCoNI The output of CoNI (after p-adjustment)
 #' @param network Network created with the function generate_network
 #' @param padjust logical. Filter output based on adjusted p values
-#' @return The function returns a table with the results of the binomial tests. Significant results correspond to local controlling features
+#' @return Returns a data.frame with the results of the binomial tests. Significant results correspond to local controlling features
 #' @importFrom igraph V neighbors
 #' @importFrom stats dbinom
 #' @import dplyr
@@ -1138,7 +1158,8 @@ find_localControllingFeatures<-function(ResultsCoNI,network,padjust=TRUE){
 #'@description This function outputs the linker features with the strongest effect on the correlation of the vertex features
 #'@param ResultsCoNI The output of CoNI
 #'@param topn Top n number of features to output
-#'@return It returns the top n features with the strongest effect
+#'@return Returns a data.frame, a filtered version of ResultsCoNI, showing the top n features
+#'with the strongest effect, that is, the highest difference between the partial correlation and correlation coefficient.
 #'@importFrom rlang .data
 #'@examples
 #' data(CoNIResultsHFDToy)
@@ -1160,7 +1181,7 @@ top_n_LF_byMagnitude<-function(ResultsCoNI, topn=10){
 #' @description This function creates a table of the local controlling edge features
 #' @param CoNIResults The output of CoNI (after p-adjustment)
 #' @param LCFs Local controlling edge features as a vector
-#' @return Summary table of local controlling edge features and their respective vertex pairs, and unique vertexes.
+#' @return A data.frane of local controlling edge features and their respective vertex pairs, and unique vertexes.
 #' @examples
 #' #Load CoNI results
 #' data(CoNIResultsHFDToy)
@@ -1197,7 +1218,7 @@ tableLCFs_VFs<-function(CoNIResults,LCFs){
 #' @param Treat1_path TableForNetwork_file1 (file generated by CoNI) with path for Treatment 1
 #' @param Treat2_path TableForNetwork_file2 (file generated by CoNI) with path for Treatment 2
 #' @param OutputName Output file name with path
-#' @return The shared triplets between two CoNI runs
+#' @return A data.frame with the shared triplets (vertex1 vertex2 edge_feature) between two CoNI runs
 #' @examples
 #' #For an example see the vignette
 #' @importFrom utils write.csv
@@ -1232,7 +1253,7 @@ Compare_Triplets<-function(Treat1_path,Treat2_path,
 #' @param OutputName Output file name with path
 #' @param Treat1Name Name of treatment one, default Treat1
 #' @param Treat2Name Name of treatment one, default Treat2
-#' @return A table with all possible vertex class pairs and their numbers per treatment.
+#' @return A data.frame with all possible vertex-class pairs and their numbers per edge-feature and treatment.
 #' @examples
 #' #For an example see the vignette
 #' @importFrom utils read.csv
@@ -1289,7 +1310,7 @@ Compare_VertexClasses_sharedEdgeFeatures<-function(Treat1_path,Treat2_path,Outpu
 #' @param szaxisTxt Size axis text
 #' @param szaxisTitle Size axis titles
 #' @export
-#' @return A barplot showing the vertex-class pairs profile of the shared edge features between two treatments
+#' @return A ggplot object for a barplot. The barplot shows the vertex-class pairs profile of a single shared edge feature between two treatments
 #' @examples
 #' data(VertexClassesSharedGenes_HFDvsChow)
 #' create_edgeFBarplot(CompTreatTable = VertexClassesSharedGenes_HFDvsChow,
@@ -1361,7 +1382,7 @@ create_edgeFBarplot<-function(CompTreatTable,edgeF,treat1="Treatment1",treat2="T
 #' @param szaxisTxt Size axis text
 #' @param szaxisTitle Size axis title
 #' @export
-#' @return A barplot showing the vertex-class pairs profile of all shared edge features between treatments
+#' @return A ggplot object for a barplot. The barplot shows the vertex-class pairs profile of all shared edge features between treatments
 #' @examples
 #' data(VertexClassesSharedGenes_HFDvsChow)
 #' create_GlobalBarplot(CompTreatTable = VertexClassesSharedGenes_HFDvsChow,
@@ -1424,13 +1445,13 @@ create_GlobalBarplot<-function(CompTreatTable,
           axis.text = element_text(size = szaxisTxt))+
     geom_text(data = subset(GlobalResultsFBarplot, number_pairs >= maxpairs & treatment==treat1),
               aes(label=.data$number_pairs),
-              show.legend  = F ,
+              show.legend  = FALSE ,
               size=szggrepel,
               position=position_dodge(width=0.9),
               vjust=-0.25)+
     geom_text_repel(data = subset(GlobalResultsFBarplot, number_pairs >=  maxpairs & treatment==treat2),
                     aes(label=.data$number_pairs),
-                    show.legend = F,
+                    show.legend = FALSE,
                     size = szggrepel,
                     min.segment.length = unit(0, 'lines'),
                     hjust=0,
@@ -1452,6 +1473,7 @@ create_GlobalBarplot<-function(CompTreatTable,
 #'Labels to colors
 #' @description Internal use. This function is modified version of labels2colors of WGCNA and the internet
 #' @keywords internal
+#' @return A character vector with colors
 labels2colors_2<-function (labels, zeroIsGrey = TRUE, colorSeq = NULL, naColor = "grey", commonColorCode = TRUE) {
   standardColors<-function (n = NULL) {
     if (is.null(n))
@@ -1530,6 +1552,7 @@ labels2colors_2<-function (labels, zeroIsGrey = TRUE, colorSeq = NULL, naColor =
 #' Get class rgb color
 #' @description Internal use. This function gets the class rgb color of a specific (lipid) class
 #' @keywords internal
+#' @return A character object, that corresponds to a color in hexadecimal format
 getcolor<-function(ClassM,tableColor){
   IDxclass<-grep("class$",colnames(tableColor),ignore.case = TRUE)
   IDxrgb<-grep("rgb",colnames(tableColor),ignore.case = TRUE)
@@ -1542,6 +1565,8 @@ getcolor<-function(ClassM,tableColor){
 #'@param AnnotationDf Annotation data frame that contains a factor variable to use to assign colors
 #'@param col  Column with factor variable that will be used to assign colors
 #'@export
+#'@return The input data.frame with two extra columns specifying the colors
+#'        for all vertexes according to their respective vertex-class
 #'@importFrom gplots col2hex
 assign_colorsAnnotation<-function(AnnotationDf,col="Class"){
   IDxclass<-grep(paste0(col,"$"),colnames(AnnotationDf),ignore.case = TRUE)
@@ -1553,6 +1578,7 @@ assign_colorsAnnotation<-function(AnnotationDf,col="Class"){
 #' Get colors
 #' @description Internal use. This function gets the rgb colors of every (lipid) class and names them according to the class
 #' @keywords internal
+#' @return A character vector with the rgb colors named after the vertex-class (e.g. lipid class)
 obtain_groupcolors<-function(Annotation){
   group.colors<-c()
   IDxclass<-grep("class$",colnames(Annotation),ignore.case = TRUE)
@@ -1570,6 +1596,7 @@ obtain_groupcolors<-function(Annotation){
 #' @keywords internal
 #' @importFrom tidyr separate
 #' @import dplyr
+#' @return A data.frame with the number of vertex features per class and edge feature
 countClassPerEdgeFeature<-function(ResTable,treatment="Chow"){
   EdgeFeatures<-unique(ResTable$EdgeFeature)
   ResCountVertexClass<-data.frame(
@@ -1604,6 +1631,7 @@ countClassPerEdgeFeature<-function(ResTable,treatment="Chow"){
 #' Split function
 #' @description Internal use. Function to split the EdgeFeatures in smaller groups
 #' @keywords internal
+#' @return A list of character vectors, each vector contains n edge features
 chunk2 <- function(x,n) split(x, cut(seq_along(x), n, labels = FALSE))
 
 #' Number Vertex features per class for every shared edge feature
@@ -1611,6 +1639,7 @@ chunk2 <- function(x,n) split(x, cut(seq_along(x), n, labels = FALSE))
 #' @keywords internal
 #' @import ggrepel
 #' @import ggplot2
+#' @return ggplot object for a barplot depicting the number of vertex features per class for every edge feature
 barplot_VertexsPerEdgeFeature<-function(SplitFile,title="Vertex Features per class",AnnotationWithColors,ggrepelL=TRUE,xlb="Gene",szggrepel=2.5,szTitle=12,szaxisTxt=12,szaxisTitle=12,szLegendText=10,szLegendKey=1){
 
   EdgeFeature <- Count <- VertexClass <- NULL
@@ -1659,11 +1688,11 @@ barplot_VertexsPerEdgeFeature<-function(SplitFile,title="Vertex Features per cla
 }
 
 #' Vertex Class profile per edge feature (one treatment)
-#' @description This function creates a barplot depicting the number of vertex features per class for every shared edge feature between two treatments.
+#' @description This function creates a barplot or barplots showing the number of vertex features per class for every shared edge feature between two treatments
 #' @param CompTreatTable Output of Compare_VertexClasses_sharedEdgeFeatures
-#' @param Annotation Data frame that includes the rgb colors for every class. The column 'class' (or 'Class') has to be present and also the column 'ColorRgb'.
+#' @param Annotation Data frame that includes the rgb colors for every class. The column 'class' (or 'Class') has to be present and also the column 'ColorRgb'
 #' @param chunks To avoid a non readable dense plot the results can be spitted in multiple plots
-#' @param treat Specify the treatment for which the plot will be created. It should be one of the two treatments in the output of Compare_VertexClasses_sharedEdgeFeatures.
+#' @param treat Specify the treatment for which the plot will be created. It should be one of the two treatments in the output of Compare_VertexClasses_sharedEdgeFeatures
 #' @param small logical. If only a few edge features are in the input set as TRUE. A single plot will be created
 #' @param ggrep logical. If TRUE includes ggrepel labels for every bar
 #' @param xlb x-axis label
@@ -1672,7 +1701,9 @@ barplot_VertexsPerEdgeFeature<-function(SplitFile,title="Vertex Features per cla
 #' @param szaxisTxt Size axis text
 #' @param szaxisTitle Size axis title
 #' @param ... Other parameters for inner functions, mainly ggplot2 visual parameters
-#' @return A barplot depicting the number of vertex features per class for every shared edge features between two treatments. The barplot restricts to one treatment.
+#' @return A list of ggplot objects to create different barplots. The barplots show the number of vertex features per class for every shared
+#' edge feature between two treatments. The barplots restrict to one of the compared treatments. An alternative output
+#'is a data.frame with the number of vertex features per class and edge feature (onlyTable=TRUE)
 #' @examples
 #' data(VertexClassesSharedGenes_HFDvsChow)
 #' data(MetColorTable)
@@ -1689,7 +1720,7 @@ getVertexsPerEdgeFeature<-function(CompTreatTable, Annotation,
                                    small = FALSE,
                                    ggrep = TRUE,
                                    xlb = "Gene",
-                                   onlyTable = F,
+                                   onlyTable = FALSE,
                                    szTitle = 12,
                                    szaxisTxt = 12,
                                    szaxisTitle = 12, ...){
@@ -1735,7 +1766,7 @@ getVertexsPerEdgeFeature<-function(CompTreatTable, Annotation,
 #' @param onlyT logical. If TRUE a table is returned instead of a grid of plots
 #' @param small logical. If only a few edge features are in the input set as TRUE. A single plot will be created
 #' @param ... Other parameters for inner functions, mainly ggplot2 visual parameters
-#' @return Two side-by-side barplots, one for each treatment, showing the number of vertex features per class for every shared edge feature
+#' @return A gtable containing side-by-side barplots, one for each treatment, showing the number of vertex features per class for every shared edge feature
 #' @examples
 #' data(VertexClassesSharedGenes_HFDvsChow)
 #' VCSGs<-VertexClassesSharedGenes_HFDvsChow
@@ -1755,7 +1786,7 @@ getVertexsPerEdgeFeature<-function(CompTreatTable, Annotation,
 #' @importFrom utils capture.output
 getVertexsPerEdgeFeature_and_Grid<-function(CompTreatTable,
                                             Treat1, Treat2, Annotation,
-                                            chunks = 3, ggrep = T,
+                                            chunks = 3, ggrep = TRUE,
                                             xlb = "Edge Feature",
                                             onlyT = FALSE,
                                             small = FALSE,...){
@@ -1834,7 +1865,7 @@ getVertexsPerEdgeFeature_and_Grid<-function(CompTreatTable,
 #' @param ylim Optional y-limits of the plot
 #' @import ggplot2
 #' @import ggrepel
-#' @return A stacked barplot showing the vertex-class pairs profile of all shared edge features but restricted to a single treatment. Every bar consists of multiple genes that are depicted with different colors
+#' @return A ggplot object to create a stacked barplot. The stacked barplot shows the vertex-class pairs profile of all shared edge features but restricted to a single treatment. Every bar consists of multiple edge features (stacked) that are represented with different colors
 #' @examples
 #' data(VertexClassesSharedGenes_HFDvsChow)
 #' create_stackedGlobalBarplot_perTreatment(CompTreatTable = VertexClassesSharedGenes_HFDvsChow,
@@ -1925,7 +1956,7 @@ create_stackedGlobalBarplot_perTreatment<-function(CompTreatTable,
 #' @param force Repelling force for ggrepel labels
 #' @param xlb Name for x-axis
 #' @param ... Other parameters for inner functions, mainly ggplot2 visual parameters
-#' @return A stacked barplot showing the vertex-class pairs profile of all shared edge features between two treatments (one bar plot per treatment). Every bar consists of multiple genes that are depicted with different colors
+#' @return A gtable containing stacked barplots. The barplots show the vertex-class pairs profile of all shared edge features between two treatments (one bar plot per treatment). Every bar consists of multiple edge features that are depicted with different colors
 #' @examples
 #' data(VertexClassesSharedGenes_HFDvsChow)
 #' VCSGs<-VertexClassesSharedGenes_HFDvsChow
@@ -1938,7 +1969,7 @@ create_stackedGlobalBarplot_perTreatment<-function(CompTreatTable,
 #' @importFrom utils capture.output
 #' @export
 getstackedGlobalBarplot_and_Grid<-function(CompTreatTable, Treat1, Treat2,
-                                           ggrep=T, max_pairsLegend = 1, force = 0.1, mx.overlaps=Inf, szggrepel=6,
+                                           ggrep=TRUE, max_pairsLegend = 1, force = 0.1, mx.overlaps=Inf, szggrepel=6,
                                            xlb = "Vertex-Class Pairs",...){
   #Get ylimits and plots
   ylimTreat1<-capture.output(Treat1Plot<-create_stackedGlobalBarplot_perTreatment(CompTreatTable = CompTreatTable,
@@ -1971,6 +2002,7 @@ getstackedGlobalBarplot_and_Grid<-function(CompTreatTable, Treat1, Treat2,
 #' Bipartite Table
 #' @description Internal use. This function creates a table that is used to create a simple bipartite network
 #' @keywords internal
+#' @return A matrix containing two columns, one for vertexes and one for edge features. The matching happens if they are adjacent to one another
 createBipartiteTable<-function(CoNINetworkTable){
   resultFinal<-list()
   for(n in 1:nrow(CoNINetworkTable)){
@@ -2002,13 +2034,13 @@ createBipartiteTable<-function(CoNINetworkTable){
 #' @param TableNetwork TableForNetwork_file (file generated by CoNI) with path
 #' @param colorVertexTable Table specifying the colors for the vertex features. The first column should contain the names matching the features of the vertex Data and another column should specify the colors (column name: Colors).
 #' @param incidenceMatrix logical. If TRUE it returns a hypergraph incidence matrix instead of a bipartite graph
-#' @return This function returns a bipartite graph (igraph object) or a hypergraph incidence matrix. Basic network statistics are included in the bipartite graph
+#' @return An igraph object for a bipartite graph or a hypergraph incidence matrix to represent ResultsCoNI. Basic network statistics are included in the bipartite graph. See generate_network function for details or consult the igraph package
 #' @examples
 #' #See vignette for an example
 #' @export
 #' @importFrom gplots col2hex
 #' @importFrom igraph graph_from_data_frame simplify V E degree hub_score transitivity closeness betweenness eigen_centrality centr_betw centr_clo centr_degree edge_betweenness write_graph as_ids get.incidence
-createBipartiteGraph<-function(TableNetwork,colorVertexTable,incidenceMatrix=F){
+createBipartiteGraph<-function(TableNetwork,colorVertexTable,incidenceMatrix=FALSE){
   TableNetwork<-read.csv(TableNetwork)
   #Create bipartite table
   bipartiteTable<-createBipartiteTable(TableNetwork)
@@ -2026,9 +2058,9 @@ createBipartiteGraph<-function(TableNetwork,colorVertexTable,incidenceMatrix=F){
   }
 
   #Create graph
-  cnodes <- data.frame("Name"=unique(c(as.character(bipartiteTable$from),as.character(bipartiteTable$to))),stringsAsFactors=F)#Get the nodes vertexFeature-EdgeFeature
+  cnodes <- data.frame("Name"=unique(c(as.character(bipartiteTable$from),as.character(bipartiteTable$to))),stringsAsFactors=FALSE)#Get the nodes vertexFeature-EdgeFeature
   #Assign colors to nodes
-  m <- merge(cnodes,colorVertexTable,by.x="Name",by.y=colnames(colorVertexTable)[1],all.x=T)
+  m <- merge(cnodes,colorVertexTable,by.x="Name",by.y=colnames(colorVertexTable)[1],all.x=TRUE)
   #Assign grey color to Edges
   m<- m %>% mutate(type=ifelse(is.na(m[,2]),"EdgeFeature","VertexFeature"))#Might be problematic but minimum annotation file should contain three columns, vertex-feature,color and colorRgb
   #m[is.na(m[,2]),2]<-"EdgeFeature"
@@ -2036,8 +2068,8 @@ createBipartiteGraph<-function(TableNetwork,colorVertexTable,incidenceMatrix=F){
   m[is.na(m[,idx_colorColumn]),idx_colorColumn]<-"grey"
   m$ColorRgb<-col2hex(m[,idx_colorColumn])
   #Create graph
-  netd <- graph_from_data_frame(d=bipartiteTable, vertices=m, directed=F)
-  netd <- simplify(netd,remove.multiple=F)
+  netd <- graph_from_data_frame(d=bipartiteTable, vertices=m, directed=FALSE)
+  netd <- simplify(netd,remove.multiple=FALSE)
 
   #Bipartite option
   #bipartite_mapping(netd)$type this function is giving me problems
@@ -2050,15 +2082,15 @@ createBipartiteGraph<-function(TableNetwork,colorVertexTable,incidenceMatrix=F){
   igraph::V(netd)$hub_score <- hub_score(netd, weights=NA)$vector
   igraph::V(netd)$transitivity <- transitivity(netd, type="local")
   igraph::V(netd)$closeness <- closeness(netd, mode="all", weights=NA)
-  igraph::V(netd)$betweenness <- betweenness(netd, directed=F, weights=NA)
-  igraph::V(netd)$eigen_centrality <- eigen_centrality(netd, directed=F, weights=NA)$vector
-  igraph::V(netd)$centralized_betweenness <- centr_betw(netd, directed=F, normalized=T)$res
-  igraph::V(netd)$centralized_closeness <- centr_clo(netd, mode="all", normalized=T)$res
-  igraph::V(netd)$centralized_degree <- centr_degree(netd, mode="all", normalized=T)$res
+  igraph::V(netd)$betweenness <- betweenness(netd, directed=FALSE, weights=NA)
+  igraph::V(netd)$eigen_centrality <- eigen_centrality(netd, directed=FALSE, weights=NA)$vector
+  igraph::V(netd)$centralized_betweenness <- centr_betw(netd, directed=FALSE, normalized=TRUE)$res
+  igraph::V(netd)$centralized_closeness <- centr_clo(netd, mode="all", normalized=TRUE)$res
+  igraph::V(netd)$centralized_degree <- centr_degree(netd, mode="all", normalized=TRUE)$res
   #V(netd)$membership_community_edgeBetweenes<-cluster_edge_betweenness(netd,directed = F)$membership
 
   #Add edge betweeness
-  igraph::E(netd)$betweeness <- edge_betweenness(netd, directed=F, weights=NA)
+  igraph::E(netd)$betweeness <- edge_betweenness(netd, directed=FALSE, weights=NA)
 
   if(incidenceMatrix){
     incidenceM<-get.incidence(netd)
@@ -2071,7 +2103,19 @@ createBipartiteGraph<-function(TableNetwork,colorVertexTable,incidenceMatrix=F){
 #' Network Statistics
 #' @description This function calculates simple network statistics and returns them as a dataframe
 #' @param Network An Igraph network
-#' @return Returns network statistics. For more information on the statistics consult the igraph package.
+#' @return Returns a data.frame with nine rows with the following network statistics:
+#'  \itemize{
+##'  \item{"net_avg_pathL"}{Shortest paths between vertices}
+##'  \item{"net_edge_density"}{Graph density, ratio of the number of edges and the number of possible edges}
+##'  \item{"net_transitivity"}{Probability that the adjacent vertices of a vertex are connected}
+##'  \item{"net_diameter"}{Length of the longest geodesic}
+##'  \item{"net_nodes_first_path_diameter"}{The nodes along the first found path with the length of diameter}
+##'  \item{"net_eigenvalue"}{The eigenvalue corresponding to the centrality scores.}
+##'  \item{"net_centralized_betweenessIdx"}{The graph level centrality index after centralizing the graph according to the betweenness of vertices}
+##'  \item{"net_centralized_closenessIdx"}{The graph level centrality index after centralizing the graph according to the closeness of vertices}
+##'  \item{"net_centralized_degreeIdx"}{The graph level centrality index after centralizing the graph according to the degrees of vertices}
+##' }
+#' For more information on the statistics consult the igraph package.
 #' @examples
 #' #Load color nodes table
 #' data(MetColorTable)
@@ -2098,26 +2142,28 @@ NetStats<-function(Network){
     net_edge_density=edge_density(Network, loops=F),
     net_transitivity=transitivity(Network, type="global"),
     net_diameter=diameter(Network, directed=F, weights=NA),
-    net_nodes_first_path_diameter= paste(names(get_diameter(Network, directed=T)),collapse=","),#returns the nodes along the first found path of that distance
-    net_eigenvalue=eigen_centrality(Network, directed=F, weights=NA)$value,
-    net_centralized_betweenessIdx=centr_betw(Network, directed=F, normalized=T)$centralization,
-    net_centralized_closenessIdx=centr_clo(Network, mode="all", normalized=T)$centralization,
-    net_centralized_degreeIdx=centr_degree(Network, mode="all", normalized=T)$centralization
+    net_nodes_first_path_diameter= paste(names(get_diameter(Network, directed=TRUE)),collapse=","),#returns the nodes along the first found path of that distance
+    net_eigenvalue=eigen_centrality(Network, directed=FALSE, weights=NA)$value,
+    net_centralized_betweenessIdx=centr_betw(Network, directed=F, normalized=TRUE)$centralization,
+    net_centralized_closenessIdx=centr_clo(Network, mode="all", normalized=TRUE)$centralization,
+    net_centralized_degreeIdx=centr_degree(Network, mode="all", normalized=TRUE)$centralization
     #net_community__modularity_edgeBetweenes=modularity(cluster_edge_betweenness(Network,directed = F))
   )))
   NetworkStatsTable<-NetworkStatsTable %>% rownames_to_column("Network_statistic")
   return(NetworkStatsTable)
 }
 
+#' Get vertexes for edge feature
 #' @keywords internal
+#' @return A character vector with the vertexes connected to a given edge feature
 getvertexes_edgeFeature<-function(edgeFeature,CoNIResults){
-  Tvertexes<-CoNIResults[CoNIResults$Feature_edgeD==edgeFeature,c(1,2),drop=F]
+  Tvertexes<-CoNIResults[CoNIResults$Feature_edgeD==edgeFeature,c(1,2),drop=FALSE]
   vertexes<-unique(unlist(c(Tvertexes[,1],Tvertexes[,2])))
   return(vertexes)
 }
 
 #' Correlation vs Partial correlation
-#' @description This function generates a scatter plot with two regression lines. The slopes of the regression lines correspond to the correlation and partial correlation coefficients (blue for cor and red for pcor)
+#' @description This function fits two linear models on standardize data and plots the results. It generates a scatter plot with two regression lines, where the slopes correspond to the correlation and partial correlation coefficients (blue for cor and red for pcor)
 #' @param ResultsCoNI The significant results generated by CoNI
 #' @param edgeFeature The edge feature to explore e.g. Fabp2 (for a gene)
 #' @param vertexD Vertex data that was given as input to CoNI
@@ -2164,7 +2210,11 @@ getvertexes_edgeFeature<-function(edgeFeature,CoNIResults){
 #'               plot_to_screen = TRUE,
 #'               height = 10,
 #'               saveFiles = FALSE)
-#'
+#' @return Returns a ggplot object for a scatter plot with two regression lines.
+#' The blue line is the regression of the vertex features, and the red line is the regression
+#' of the resulting residuals after regressing each vertex feature with the edge feature.
+#' The slope of the blue line corresponds to the pearson correlation coefficient and the slope of the red line
+#' to the partial correlation coefficient
 #' @export
 plotPcorvsCor<-function(ResultsCoNI,
                         edgeFeature,
@@ -2173,7 +2223,7 @@ plotPcorvsCor<-function(ResultsCoNI,
                         outputDir="./",
                         fname,
                         label_edgeFeature="Edge Feature",
-                        plot_to_screen=T,
+                        plot_to_screen=TRUE,
                         height=10,width=8,
                         saveFiles=FALSE){
 
@@ -2188,13 +2238,13 @@ plotPcorvsCor<-function(ResultsCoNI,
 
   plots<-list()
   for(i in 1:nrow(ResultsCoNIfull)){
-    ResultsCoNI<-ResultsCoNIfull[i, ,drop=F]
+    ResultsCoNI<-ResultsCoNIfull[i, ,drop=FALSE]
     #Example Fabp2
     vertexes_edgeFeature<-getvertexes_edgeFeature(edgeFeature = edgeFeature,CoNIResults = ResultsCoNI)
     M1<-vertexes_edgeFeature[1]
     M2<-vertexes_edgeFeature[2]
 
-    edgeFeature_vertex_Expression<-as.data.frame(cbind(edgeD[,edgeFeature,drop=F],vertexD[,vertexes_edgeFeature,drop=F]))
+    edgeFeature_vertex_Expression<-as.data.frame(cbind(edgeD[,edgeFeature,drop=FALSE],vertexD[,vertexes_edgeFeature,drop=FALSE]))
     fN<-ncol(edgeFeature_vertex_Expression)-1
     edgeFeature_vertex_Expression[,1:fN]<-apply(edgeFeature_vertex_Expression[,1:fN],2,as.numeric)
 
@@ -2222,9 +2272,9 @@ plotPcorvsCor<-function(ResultsCoNI,
 
     plots[[i]]<-ggplot(NewDF,aes(.data$vertex1,.data$vertex2)) +
       geom_point()+
-      stat_smooth(method="lm",se=F)+
+      stat_smooth(method="lm",se=FALSE)+
       geom_point(data = NewDF,aes(eM1G1,eM2G1),color="red")+
-      stat_smooth(data = NewDF,aes(eM1G1,eM2G1),color="red",method="lm",se=F)+
+      stat_smooth(data = NewDF,aes(eM1G1,eM2G1),color="red",method="lm",se=FALSE)+
       xlab(M1)+
       ylab(M2)+
       ggtitle(paste0(label_edgeFeature,": ",edgeFeature))+

@@ -6,6 +6,9 @@
 \usage{
 check_previous(del, iteration, outDir, verb)
 }
+\value{
+No return value, called for side effects
+}
 \description{
 Internal use. This function checks previous files and deletes according to the User input option
 Requires some modifications...

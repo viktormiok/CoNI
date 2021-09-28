@@ -6,6 +6,9 @@
 \usage{
 check_outputDir(outputDir, verb)
 }
+\value{
+No return value, called for side effects
+}
 \description{
 Internal use. This function checks if the output directory exists and if it does not, it will create it
 }

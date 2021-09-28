@@ -14,7 +14,7 @@ find_localControllingFeatures(ResultsCoNI, network, padjust = TRUE)
 \item{padjust}{logical. Filter output based on adjusted p values}
 }
 \value{
-The function returns a table with the results of the binomial tests. Significant results correspond to local controlling features
+Returns a data.frame with the results of the binomial tests. Significant results correspond to local controlling features
 }
 \description{
 This function applies for a selected subnetwork a binomial test using the frequency of appearance of an edge feature and the total number of edge features. The probability corresponds to 1/n_df, where n_df corresponds to the total number of edge features in the network.

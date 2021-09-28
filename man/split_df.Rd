@@ -6,6 +6,9 @@
 \usage{
 split_df(AbundantDF, numberSplitDF_2 = 2)
 }
+\value{
+A list of data.frames
+}
 \description{
 Internal use. This function wills split the 'big' omics data into smaller data frames to improve computations, to avoid running out of memory.
 }

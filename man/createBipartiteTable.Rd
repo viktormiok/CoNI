@@ -6,6 +6,9 @@
 \usage{
 createBipartiteTable(CoNINetworkTable)
 }
+\value{
+A matrix containing two columns, one for vertexes and one for edge features. The matching happens if they are adjacent to one another
+}
 \description{
 Internal use. This function creates a table that is used to create a simple bipartite network
 }

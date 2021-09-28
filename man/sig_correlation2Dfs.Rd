@@ -6,6 +6,9 @@
 \usage{
 sig_correlation2Dfs(metabolite_data, gene_expression)
 }
+\value{
+A data.frame with vertex-edge significant correlation coefficients and their p-values
+}
 \description{
 Internal use. This function input are two data frames (e.g. metabolites and genes). It calculates the correlation matrix and creates a table with only significant pairs. No correction for multiple testing is done
 }

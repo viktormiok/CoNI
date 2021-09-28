@@ -6,6 +6,9 @@
 \usage{
 chunk2(x, n)
 }
+\value{
+A list of character vectors, each vector contains n edge features
+}
 \description{
 Internal use. Function to split the EdgeFeatures in smaller groups
 }

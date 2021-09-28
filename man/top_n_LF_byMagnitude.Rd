@@ -12,7 +12,8 @@ top_n_LF_byMagnitude(ResultsCoNI, topn = 10)
 \item{topn}{Top n number of features to output}
 }
 \value{
-It returns the top n features with the strongest effect
+Returns a data.frame, a filtered version of ResultsCoNI, showing the top n features
+with the strongest effect, that is, the highest difference between the partial correlation and correlation coefficient.
 }
 \description{
 This function outputs the linker features with the strongest effect on the correlation of the vertex features

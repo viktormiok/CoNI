@@ -72,7 +72,7 @@ CoNI(
 \item{saveFiles}{logical. If FALSE CoNI function will not save any file to disk}
 }
 \value{
-CoNI returns a table with partial correlation coefficients for every triplet and the pvalue of the Steiger tests
+CoNI returns a data.frame with the correlation coefficients of the vertex-pairs, the partial correlation coefficients for every triplet, and the pvalue of the Steiger tests
 }
 \description{
 CoNI is the main function of Correlation guided Network Integration (CoNI). Input data should come from two sources (e.g., gene expression and metabolite expression), and it should come from the same samples. It calculates all pairwise correlations of the second data input elements and the partial correlations of these pairwise elements with respect to the elements of the first data input. Both data inputs can be prefiltered to include only those elements that significantly correlate. The first data input can be prefiltered to keep just low variance elements (var<0.5). A Steiger test is used to identify significant changes between the correlation and partial correlation values. Results can be visually represented in a Network.

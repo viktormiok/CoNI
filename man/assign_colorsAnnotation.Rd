@@ -11,6 +11,10 @@ assign_colorsAnnotation(AnnotationDf, col = "Class")
 
 \item{col}{Column with factor variable that will be used to assign colors}
 }
+\value{
+The input data.frame with two extra columns specifying the colors
+       for all vertexes according to their respective vertex-class
+}
 \description{
 This function assigns two color columns (color name and rgb) to an annotation data frame according to a column named 'Class' or 'class'
 }

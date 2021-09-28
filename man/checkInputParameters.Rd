@@ -6,6 +6,9 @@
 \usage{
 checkInputParameters(ParaList)
 }
+\value{
+No return value, called for side effects
+}
 \description{
 Internal use. Function  to check if input parameters are of the right class
 }

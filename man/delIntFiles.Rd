@@ -6,6 +6,9 @@
 \usage{
 delIntFiles(del, outDir)
 }
+\value{
+No return value, called for side effects
+}
 \description{
 Internal use. This function deletes intermediary files.
 }

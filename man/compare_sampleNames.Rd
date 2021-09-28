@@ -6,6 +6,9 @@
 \usage{
 compare_sampleNames(df1, df2)
 }
+\value{
+No return value, called for side effects
+}
 \description{
 Internal use. This function compares the sample names between the two datasets provided. If names do not match CoNI stops and outputs an error message.
 }

@@ -6,6 +6,9 @@
 \usage{
 countClassPerEdgeFeature(ResTable, treatment = "Chow")
 }
+\value{
+A data.frame with the number of vertex features per class and edge feature
+}
 \description{
 Internal use. This function counts for every edge feature the number of vertex features (e.g. lipids) per class. It disregards the number of vertex pairs...
 }

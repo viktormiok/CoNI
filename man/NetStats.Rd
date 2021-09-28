@@ -10,7 +10,19 @@ NetStats(Network)
 \item{Network}{An Igraph network}
 }
 \value{
-Returns network statistics. For more information on the statistics consult the igraph package.
+Returns a data.frame with nine rows with the following network statistics:
+ \itemize{
+ \item{"net_avg_pathL"}{Shortest paths between vertices}
+ \item{"net_edge_density"}{Graph density, ratio of the number of edges and the number of possible edges}
+ \item{"net_transitivity"}{Probability that the adjacent vertices of a vertex are connected}
+ \item{"net_diameter"}{Length of the longest geodesic}
+ \item{"net_nodes_first_path_diameter"}{The nodes along the first found path with the length of diameter}
+ \item{"net_eigenvalue"}{The eigenvalue corresponding to the centrality scores.}
+ \item{"net_centralized_betweenessIdx"}{The graph level centrality index after centralizing the graph according to the betweenness of vertices}
+ \item{"net_centralized_closenessIdx"}{The graph level centrality index after centralizing the graph according to the closeness of vertices}
+ \item{"net_centralized_degreeIdx"}{The graph level centrality index after centralizing the graph according to the degrees of vertices}
+}
+For more information on the statistics consult the igraph package.
 }
 \description{
 This function calculates simple network statistics and returns them as a dataframe

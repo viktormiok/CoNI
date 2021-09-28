@@ -18,6 +18,9 @@ barplot_VertexsPerEdgeFeature(
   szLegendKey = 1
 )
 }
+\value{
+ggplot object for a barplot depicting the number of vertex features per class for every edge feature
+}
 \description{
 Internal use. This function creates a barplot depicting the number of vertex features per class for every edge feature. To use this function one has to split first the file (or not if it is small) with the funciton chunk2
 }

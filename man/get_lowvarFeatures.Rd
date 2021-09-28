@@ -6,6 +6,9 @@
 \usage{
 get_lowvarFeatures(df)
 }
+\value{
+A data.frame where low variance features were removed
+}
 \description{
 Internal use. Get low variance features.
 }

@@ -6,6 +6,9 @@
 \usage{
 obtain_groupcolors(Annotation)
 }
+\value{
+A character vector with the rgb colors named after the vertex-class (e.g. lipid class)
+}
 \description{
 Internal use. This function gets the rgb colors of every (lipid) class and names them according to the class
 }

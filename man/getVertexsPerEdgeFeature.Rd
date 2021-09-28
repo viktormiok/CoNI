@@ -12,7 +12,7 @@ getVertexsPerEdgeFeature(
   small = FALSE,
   ggrep = TRUE,
   xlb = "Gene",
-  onlyTable = F,
+  onlyTable = FALSE,
   szTitle = 12,
   szaxisTxt = 12,
   szaxisTitle = 12,
@@ -22,11 +22,11 @@ getVertexsPerEdgeFeature(
 \arguments{
 \item{CompTreatTable}{Output of Compare_VertexClasses_sharedEdgeFeatures}
 
-\item{Annotation}{Data frame that includes the rgb colors for every class. The column 'class' (or 'Class') has to be present and also the column 'ColorRgb'.}
+\item{Annotation}{Data frame that includes the rgb colors for every class. The column 'class' (or 'Class') has to be present and also the column 'ColorRgb'}
 
 \item{chunks}{To avoid a non readable dense plot the results can be spitted in multiple plots}
 
-\item{treat}{Specify the treatment for which the plot will be created. It should be one of the two treatments in the output of Compare_VertexClasses_sharedEdgeFeatures.}
+\item{treat}{Specify the treatment for which the plot will be created. It should be one of the two treatments in the output of Compare_VertexClasses_sharedEdgeFeatures}
 
 \item{small}{logical. If only a few edge features are in the input set as TRUE. A single plot will be created}
 
@@ -45,10 +45,12 @@ getVertexsPerEdgeFeature(
 \item{...}{Other parameters for inner functions, mainly ggplot2 visual parameters}
 }
 \value{
-A barplot depicting the number of vertex features per class for every shared edge features between two treatments. The barplot restricts to one treatment.
+A list of ggplot objects to create different barplots. The barplots show the number of vertex features per class for every shared
+edge feature between two treatments. The barplots restrict to one of the compared treatments. An alternative output
+is a data.frame with the number of vertex features per class and edge feature (onlyTable=TRUE)
 }
 \description{
-This function creates a barplot depicting the number of vertex features per class for every shared edge feature between two treatments.
+This function creates a barplot or barplots showing the number of vertex features per class for every shared edge feature between two treatments
 }
 \examples{
 data(VertexClassesSharedGenes_HFDvsChow)

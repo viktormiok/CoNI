@@ -12,7 +12,7 @@ tableLCFs_VFs(CoNIResults, LCFs)
 \item{LCFs}{Local controlling edge features as a vector}
 }
 \value{
-Summary table of local controlling edge features and their respective vertex pairs, and unique vertexes.
+A data.frane of local controlling edge features and their respective vertex pairs, and unique vertexes.
 }
 \description{
 This function creates a table of the local controlling edge features

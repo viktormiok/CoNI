@@ -6,6 +6,9 @@
 \usage{
 getcolor(ClassM, tableColor)
 }
+\value{
+A character object, that corresponds to a color in hexadecimal format
+}
 \description{
 Internal use. This function gets the class rgb color of a specific (lipid) class
 }

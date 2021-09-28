@@ -24,7 +24,7 @@ Compare_VertexClasses_sharedEdgeFeatures(
 \item{Treat2Name}{Name of treatment one, default Treat2}
 }
 \value{
-A table with all possible vertex class pairs and their numbers per treatment.
+A data.frame with all possible vertex-class pairs and their numbers per edge-feature and treatment.
 }
 \description{
 Compare VertexClass pairs of the shared Edge Features of two treatments (e.g., lipid-class-pairs per shared gene)

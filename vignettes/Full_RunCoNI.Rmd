@@ -43,7 +43,7 @@ These data is already pre-processed, that is, normalized and low-count filtered.
 # }
 ```
 
-```{r, eval=F, echo=T}
+```{r, eval=FALSE, echo=TRUE}
 # if (!requireNamespace("BiocManager", quietly = TRUE))
 #     install.packages("BiocManager")
 # BiocManager::install("genefilter")
@@ -83,13 +83,13 @@ HFD_gene<-HFD_GeneExpData
 To run `CoNI`, one can decide to keep metabolites (vertex-features) based on the significance of their pairwise correlations (padjustvertexD=FALSE) or do more stringent filtering by keeping only metabolites that significantly correlate after multiple-testing adjustment (padjustvertexD=TRUE). The user can also pre-filter the genes by keeping only those that significantly correlate with at least one metabolite (correlateDFs=TRUE).
 
 Note: This run takes around 5 hours (12 cores, 32Gb of RAM). Adjust according to the available resources.
-```{r CoNI_chow,eval=F, echo=T}
+```{r CoNI_chow,eval=FALSE, echo=TRUE}
 #Run for Chow
 # CoNIResults_Chow<-CoNI(edgeD = Chow_gene,vertexD = Chow_metabo,
-#                        saveRaw = F,filter_highVarianceEdge = T,correlateDFs=TRUE,
+#                        saveRaw = FALSE,filter_highVarianceEdge = TRUE,correlateDFs=TRUE,
 #                        padjustvertexD = FALSE, split_number = 200,
 #                        outputDir = "./Chow/",outputName = "CoNIChow",
-#                        splitedgeD = TRUE,numCores = 12,onlySgRes = T)
+#                        splitedgeD = TRUE,numCores = 2,onlySgRes = TRUE)
 ```
 
 To speed up this vignette, load significant Chow results:
@@ -99,13 +99,13 @@ data(CoNIResults_Chow)
 ```
 
 Note: This run takes around 5 hours (12 cores, 32Gb of RAM). Adjust according to the available resources.
-```{r CoNI_hfd,eval=F, echo=T}
+```{r CoNI_hfd,eval=FALSE, echo=TRUE}
 #Run for HFD
 # CoNIResults_HFD<-CoNI(edgeD = HFD_gene,vertexD = HFD_metabo,
-#                        saveRaw = F,filter_highVarianceEdge = T,
+#                        saveRaw = FALSE,filter_highVarianceEdge = TRUE,
 #                        padjustvertexD = FALSE, split_number = 200,correlateDFs=TRUE,
 #                        outputDir = "./HFD/",outputName = "CoNIHFD",
-#                        splitedgeD = TRUE,numCores = 12,onlySgRes = T)
+#                        splitedgeD = TRUE,numCores = 2,onlySgRes = TRUE)
 ```
 
 To speed up this vignette, load significant HFD results:
@@ -165,11 +165,11 @@ We can obtain some basic network statistics with the function NetStats.
 ```{r network_stats_chow}
 library(knitr)
 library(kableExtra)
-kable(NetStats(Network = ChowNetworkWithClass),caption="Network statistics Chow") %>% kable_styling(full_width = F)
+kable(NetStats(Network = ChowNetworkWithClass),caption="Network statistics Chow") %>% kable_styling(full_width = FALSE)
 ```
 
 ```{r network_stats_hfd}
-kable(NetStats(Network = HFDNetworkWithClass),caption="Network statistics HFD")  %>% kable_styling(full_width = F)
+kable(NetStats(Network = HFDNetworkWithClass),caption="Network statistics HFD")  %>% kable_styling(full_width = FALSE)
 ```
 
 ### Clustering options in igraph
@@ -246,13 +246,13 @@ The user can obtain a table of the local controlling genes matching the paired m
 #Generate table local controlling genes
 TableLCFsChow<-tableLCFs_VFs(CoNIResults = CoNIResults_Chow,LCFs = LCGenes_Chow)
 #Show first two rows
-TableLCFChowk<-kable(TableLCFsChow[1:2,],caption="Table Local Controlling Genes") %>% kable_styling(full_width = F)
+TableLCFChowk<-kable(TableLCFsChow[1:2,],caption="Table Local Controlling Genes") %>% kable_styling(full_width = FALSE)
 
 #HFD
 #Generate table local controlling genes
 TableLCFsHFD<-tableLCFs_VFs(CoNIResults = CoNIResults_HFD,LCFs = LCGenes_HFD)
 #Show first two rows
-TableLCFHFDk<-kable(TableLCFsHFD[1:2,],caption="Table Local Controlling Genes") %>% kable_styling(full_width = F)
+TableLCFHFDk<-kable(TableLCFsHFD[1:2,],caption="Table Local Controlling Genes") %>% kable_styling(full_width = FALSE)
 TableLCFHFDk
 ```
 
@@ -272,7 +272,7 @@ In the results of HFD, we can see that the largest difference between coefficien
 plotPcorvsCor(ResultsCoNI = CoNIResults_HFD,edgeFeature = "Lpin2",
               vertexFeatures = c("PC.ae.C42.2","PC.ae.C42.0"),
               vertexD = HFD_metabo,edgeD = HFD_gene,
-              label_edgeFeature = "Gene",plot_to_screen = T,
+              label_edgeFeature = "Gene",plot_to_screen = TRUE,
               outputDir = "./")
 
 ```
@@ -282,7 +282,7 @@ The user can also explore all the metabolite pairs that form triplets with the g
 ```{r CorvsPcor_AllCombinations,fig.show='hold',warning=FALSE,message=FALSE,out.width="40%",fig.show='hide'}
 plotPcorvsCor(ResultsCoNI = CoNIResults_HFD,edgeFeature = "Lpin2",
               vertexD = HFD_metabo,edgeD = HFD_gene,
-              label_edgeFeature = "Gene",plot_to_screen = T,
+              label_edgeFeature = "Gene",plot_to_screen = TRUE,
               outputDir = "./")
 
 ```
@@ -414,8 +414,8 @@ The user can explore the results from the perspective of the genes and counting 
 ```{r metabolite_classes_per_gene,fig.align='center',fig.width = 7, fig.height = 5}
 HFD_vs_Chow_LCP_Gene<-getVertexsPerEdgeFeature_and_Grid(LCP_sharedGene_HFDvsChow,"HFD","Chow",
                                                         Annotation=MetaboliteAnnotation,
-                                                        ggrep=F,
-                                                        small = T,
+                                                        ggrep=FALSE,
+                                                        small = TRUE,
                                                         szTitle = 20,
                                                         szaxisTxt = 15, 
                                                         szaxisTitle = 15)

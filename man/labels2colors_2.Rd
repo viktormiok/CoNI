@@ -12,6 +12,9 @@ labels2colors_2(
   commonColorCode = TRUE
 )
 }
+\value{
+A character vector with colors
+}
 \description{
 Internal use. This function is modified version of labels2colors of WGCNA and the internet
 }

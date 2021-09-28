@@ -13,7 +13,7 @@ plotPcorvsCor(
   outputDir = "./",
   fname,
   label_edgeFeature = "Edge Feature",
-  plot_to_screen = T,
+  plot_to_screen = TRUE,
   height = 10,
   width = 8,
   saveFiles = FALSE
@@ -44,8 +44,15 @@ plotPcorvsCor(
 
 \item{saveFiles}{logical. If FALSE plot is not saved to disk}
 }
+\value{
+Returns a ggplot object for a scatter plot with two regression lines.
+The blue line is the regression of the vertex features, and the red line is the regression
+of the resulting residuals after regressing each vertex feature with the edge feature.
+The slope of the blue line corresponds to the pearson correlation coefficient and the slope of the red line
+to the partial correlation coefficient
+}
 \description{
-This function generates a scatter plot with two regression lines. The slopes of the regression lines correspond to the correlation and partial correlation coefficients (blue for cor and red for pcor)
+This function fits two linear models on standardize data and plots the results. It generates a scatter plot with two regression lines, where the slopes correspond to the correlation and partial correlation coefficients (blue for cor and red for pcor)
 }
 \examples{
 #Load gene expression - Toy dataset of two treatments
@@ -77,5 +84,4 @@ plotPcorvsCor(ResultsCoNI = CoNIResultsHFDToy,
               plot_to_screen = TRUE,
               height = 10,
               saveFiles = FALSE)
-
 }

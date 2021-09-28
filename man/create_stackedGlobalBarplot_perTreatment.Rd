@@ -45,7 +45,7 @@ create_stackedGlobalBarplot_perTreatment(
 \item{ylim}{Optional y-limits of the plot}
 }
 \value{
-A stacked barplot showing the vertex-class pairs profile of all shared edge features but restricted to a single treatment. Every bar consists of multiple genes that are depicted with different colors
+A ggplot object to create a stacked barplot. The stacked barplot shows the vertex-class pairs profile of all shared edge features but restricted to a single treatment. Every bar consists of multiple edge features (stacked) that are represented with different colors
 }
 \description{
 This function will create a stacked barplot from the output of Compare_VertexClasses_sharedEdgeFeatures using all shared Edge Features (e.g., genes) between two treatments.

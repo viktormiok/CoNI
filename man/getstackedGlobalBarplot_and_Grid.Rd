@@ -8,7 +8,7 @@ getstackedGlobalBarplot_and_Grid(
   CompTreatTable,
   Treat1,
   Treat2,
-  ggrep = T,
+  ggrep = TRUE,
   max_pairsLegend = 1,
   force = 0.1,
   mx.overlaps = Inf,
@@ -39,7 +39,7 @@ getstackedGlobalBarplot_and_Grid(
 \item{...}{Other parameters for inner functions, mainly ggplot2 visual parameters}
 }
 \value{
-A stacked barplot showing the vertex-class pairs profile of all shared edge features between two treatments (one bar plot per treatment). Every bar consists of multiple genes that are depicted with different colors
+A gtable containing stacked barplots. The barplots show the vertex-class pairs profile of all shared edge features between two treatments (one bar plot per treatment). Every bar consists of multiple edge features that are depicted with different colors
 }
 \description{
 This function will create a stacked barplot from the output of Compare_VertexClasses_sharedEdgeFeatures using all shared Edge Features (e.g., genes) between two treatments. Results of both Treatments are side by side for better comparison.

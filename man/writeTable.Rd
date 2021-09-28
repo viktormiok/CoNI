@@ -6,6 +6,9 @@
 \usage{
 writeTable(results_write, num_cores, outputDir, iteration)
 }
+\value{
+Returns NA if it fails to write file to memory, otherwise no return value
+}
 \description{
 Internal use. This function tries to write a table with fread, if it fails it returns "NA"
 }

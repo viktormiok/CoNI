@@ -30,7 +30,19 @@ generate_network(
 \item{saveFiles}{logical. If FALSE TableForNetwork_`outputFileName`.csv and Network_`outputFileName`.graphml are not saved to disk}
 }
 \value{
-This function returns a network (igraph object) constructed from CoNI output. Basic network statistics are included in the network
+Returns an igraph object (network) constructed from ResultsCoNI. The network includes the following network statistics
+\itemize{
+ \item{"degree"}{The number of the vertex adjacent edges}
+ \item{"hub_score"}{The principal eigenvector of A*t(A), where A is the adjacency matrix of the graph}
+ \item{"transitivity"}{Probability that the adjacent vertices of a vertex are connected}
+ \item{"closeness"}{Steps required to access every other vertex from a given vertex}
+ \item{"betweenness"}{(roughly) The number of geodesics (shortest paths) going through a vertex or an edge}
+ \item{"eigen_centrality"}{Takes a graph (graph) and returns the eigenvector centralities of positions v within it}
+ \item{"centralized_betweenness"}{The vertice-level centrality score according to the betweenness of vertices}
+ \item{"centralized_closeness"}{The vertice-level centrality score according to the closeness of vertices}
+ \item{"centralized_degree"}{The vertice-level centrality score according to the degrees of vertices}
+}
+For more details see igraph package
 }
 \description{
 This function creates a network using as input the output of CoNI and a table specifying the colors for the nodes.

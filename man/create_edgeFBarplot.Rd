@@ -45,7 +45,7 @@ create_edgeFBarplot(
 \item{szaxisTitle}{Size axis titles}
 }
 \value{
-A barplot showing the vertex-class pairs profile of the shared edge features between two treatments
+A ggplot object for a barplot. The barplot shows the vertex-class pairs profile of a single shared edge feature between two treatments
 }
 \description{
 This function will create a barplot from the output of Compare_VertexClasses_sharedEdgeFeatures for a specific shared Edge Feature (e.g., a shared gene).

@@ -51,7 +51,7 @@ create_GlobalBarplot(
 \item{szaxisTitle}{Size axis title}
 }
 \value{
-A barplot showing the vertex-class pairs profile of all shared edge features between treatments
+A ggplot object for a barplot. The barplot shows the vertex-class pairs profile of all shared edge features between treatments
 }
 \description{
 This function will create a barplot from the output of Compare_VertexClasses_sharedEdgeFeatures using all shared Edge Features (e.g., genes).

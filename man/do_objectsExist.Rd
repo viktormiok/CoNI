@@ -6,6 +6,9 @@
 \usage{
 do_objectsExist(gene_exp, norm_metabo_dat, verb)
 }
+\value{
+No return value, called for side effects
+}
 \description{
 Internal use. This function tests if the input files exist, if they do not it will output an error and
 end CoNI
