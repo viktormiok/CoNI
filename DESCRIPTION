@@ -1,6 +1,6 @@
 Package: CoNI
 Type: Package
-Title: "Correlation Guided Network Integration (CoNI)"
+Title: Correlation Guided Network Integration (CoNI)
 Version: 0.1.0
 Date: 2021-09-28
 Authors@R: c(person(given = "José Manuel", 
