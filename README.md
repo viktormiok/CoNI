@@ -7,6 +7,9 @@ CoNI
 
 ### Short package description:
 `CoNI` is a practical R package for the unsupervised integration of numerical omics datasets. Our tool is based on partial correlations to identify putative confounding variables for a set of paired dependent variables. `CoNI` combines two omics datasets in an integrated, complex hypergraph-like network, represented as a weighted undirected graph, a bipartite graph, or a hypergraph structure. 
+
+<img src="https://github.com/viktormiok/CoNI/blob/master/CONI_abstract.jpeg" align="top" height="600" width="1100">
+
 ### Installation
 Before installing `CoNI` a few dependencies are necessary:
 ```r
