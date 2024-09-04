@@ -13,7 +13,7 @@ CoNI
 ### Installation
 Before installing `CoNI` a few dependencies are necessary:
 ```r
-dependencies<-c("igraph","doParallel","cocor","tidyverse","foreach","ggrepel","gplots","gridExtra","plyr","ppcor","tidyr","Hmisc")
+dependencies<-c("igraph", "doParallel", "cocor", "tidyverse", "foreach","ggrepel", "gplots", "gridExtra", "plyr", "ppcor", "tidyr", "Hmisc")
 
 `%notin%`<-Negate(`%in%`)
 for(package in dependencies){
@@ -27,6 +27,6 @@ if (!requireNamespace("BiocManager", quietly = TRUE))
 BiocManager::install("genefilter")
 ```
 
-Python3 is also required to run CoNI. Make sure it is installed and in your path. 
+Python3 is also required to run CoNI. Make sure it is installed and it is in your path. 
 
 
