@@ -27,6 +27,5 @@ if (!requireNamespace("BiocManager", quietly = TRUE))
 BiocManager::install("genefilter")
 ```
 
-Python 3 is also required to run CoNI. Make sure it is installed and it is in your path. 
-
+CoNI requires Python 3. Ensure that Python 3 is installed and correctly added to your system PATH.
 
