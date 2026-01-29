@@ -29,3 +29,11 @@ BiocManager::install("genefilter")
 
 CoNI requires Python 3. Ensure that Python 3 is installed and correctly added to your system PATH.
 
+## References
+
+Publications related to __`CoNI`__ include:
+
+ - Monroy Kuhn, J.M., **Miok, V.**, Lutter, D. (2022),
+   "[Correlation guided Network Integration (CoNI), an R package for integrating numerical omics data that allows multiform graph representations to study molecular interaction networks](https://academic.oup.com/bioinformaticsadvances/article/2/1/vbac042/6603108)".       
+    *Bioinformatics Advances*, 2(1): 0-42.
+Please cite the relevant publications if you use __`CoNI`__.
