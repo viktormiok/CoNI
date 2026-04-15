@@ -35,6 +35,22 @@ BiocManager::install("genefilter")
 
 CoNI requires Python 3. Ensure that Python 3 is installed and correctly added to your system PATH.
 
+## Docker
+
+If your system configuration makes installing __`CoNI`__ natively difficult, a Docker container is an alternative way to get __`CoNI`__ running.
+
+**Note:** Docker Machine has Memory and CPU limits on Mac OS X. To control it, please check instructions either for [CLI](https://stackoverflow.com/questions/32834082/how-to-increase-docker-machine-memory-mac/32834453#32834453) or for [Docker Desktop](https://docs.docker.com/docker-for-mac/#advanced).
+
+For building a Docker image from the Dockerfile, download the [Dockerfile](https://github.com/viktormiok/CoNI/blob/main/Dockerf) (available in this repo) and run the following command to create it:
+```
+docker build -t CoNI.
+```
+This will create a __`CoNI`__ Docker image on your system (Please be patient, as the build may take approximately 30–50 minutes to complete).
+You can then run it using the following command:
+```
+docker run -d -p 8787:8787 -e PASSWORD=pass --name tigaR -it CoNI
+```
+
 ## References
 
 Publications related to __`CoNI`__ include:
