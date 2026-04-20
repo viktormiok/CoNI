@@ -50,6 +50,9 @@ You can then run it using the following command:
 ```
 docker run -d -p 8787:8787 -e PASSWORD=pass --name tigaR -it CoNI
 ```
+## License
+
+__`CoNI`__ is distributed under the MIT license. Please read the license before using __`CoNI`__, distributed in the `LICENSE` file.
 
 ## References
 
