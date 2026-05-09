@@ -16,14 +16,20 @@ CoNI
 - [Tutorials](#tutorials)
 - [License](#license)
 - [References](#references)
-- 
+  
 ## Correlation Guided Network Integration
 
-### Short package description:
+### Overview:
 `CoNI` is a practical and easy-to-use R package for the unsupervised integration of numerical omics datasets. Our tool is based on partial correlations to identify putative confounding variables for a set of paired dependent variables. `CoNI` combines two omics datasets in an integrated, complex hypergraph-like network, represented as a weighted undirected graph, a bipartite graph, or a hypergraph structure. 
 
 <img src="https://github.com/viktormiok/CoNI/blob/master/CONI_abstract.jpeg" align="top" height="480" width="1100">
 
+#### Application
+CoNI is designed to integrate two numerical omics datasets measured on the same samples (e.g., gene expression + metabolomics). Typical examples:
+
+- Transcriptomics (RNA‑seq) + metabolomics
+- Proteomics + metabolomics
+- Microbiome abundance + metabolite profiles
 ### Installation
 Before installing `CoNI`, a few dependencies are necessary:
 ```r
