@@ -20,7 +20,7 @@ CoNI
 ## Correlation Guided Network Integration
 
 ### Overview:
-`CoNI` is an R package for unsupervised integration of two numerical omics datasets, designed to be practical and easy to use. It employs a correlation-based approach, specifically, partial correlation analysis, to uncover how features in one dataset might influence relationships between features in the other. By calculating partial correlations, CoNI can identify putative confounding variables in one omics layer (the “linker” dataset) that potentially explain or drive the observed correlations among paired features in another layer (the “vertex” dataset). In simpler terms, CoNI finds features in one data layer that could be causing or masking correlations in the other layer, helping researchers tease out hidden associations without any supervised guidance.
+`CoNI` is an R package for unsupervised integration of two numerical omics datasets, designed to be practical and easy to use. It employs a correlation-based approach, specifically partial correlation analysis, to uncover how features in one dataset might influence relationships between features in the other. By calculating partial correlations, CoNI can identify putative confounding variables in one omics layer (the “linker” dataset) that potentially explain or drive the observed correlations among paired features in another layer (the “vertex” dataset). In simpler terms, CoNI finds features in one data layer that could be causing or masking correlations in the other layer, helping researchers tease out hidden associations without any supervised guidance.
 
 After identifying these cross-omics relationships, `CoNI` generates an interpretable network that integrates the two data layers. This integrated network can be represented in three complementary forms for analysis and visualization: as a weighted undirected graph (with features as nodes and confounding links as weighted edges), as a bipartite graph (where nodes are separated into two types corresponding to each omics layer and connections show their interactions), or as a hypergraph (in which a single confounding feature may connect multiple target features simultaneously). These versatile network representations make it easier to explore complex interactions across the two omics datasets, helping users to identify key multi-omics relationships, detect confounders, and generate new hypotheses about underlying biological interactions.
 
@@ -53,7 +53,7 @@ CoNI requires Python 3. Ensure that Python 3 is installed and correctly added to
 
 ## Docker
 
-If your system configuration makes installing __`CoNI`__ natively difficult, a Docker container is an alternative way to get __`CoNI`__ package running.
+If your system configuration makes installing __`CoNI`__ natively difficult, a Docker container is an alternative way to get the __`CoNI`__ package running.
 
 **Note:** Docker Machine has Memory and CPU limits on Mac OS X. To control it, please check instructions either for [CLI](https://stackoverflow.com/questions/32834082/how-to-increase-docker-machine-memory-mac/32834453#32834453) or for [Docker Desktop](https://docs.docker.com/docker-for-mac/#advanced).
 
